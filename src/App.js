@@ -362,7 +362,7 @@ function LoginScreen({ members, onLogin, bookName, bookColor }) {
   return (
     <div style={{ minHeight:"100vh", background:`linear-gradient(135deg,${bookColor||"#1D4ED8"},#3B82F6)`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24, fontFamily:"'Noto Sans TC','PingFang TC',sans-serif" }}>
       <div style={{ fontSize:52, marginBottom:12 }}>💳</div>
-      <div style={{ color:"#fff", fontWeight:800, fontSize:26, letterSpacing:1, marginBottom:4 }}>{bookName||"朋友分帳"}</div>
+      <div style={{ color:"#fff", fontWeight:800, fontSize:26, letterSpacing:1, marginBottom:4 }}>{bookName||"分帳小能手 NOMO."}</div>
       <div style={{ color:"rgba(255,255,255,.7)", fontSize:14, marginBottom:32 }}>出遊記帳、輕鬆分帳</div>
       <div style={{ background:"#fff", borderRadius:20, padding:24, width:"100%", maxWidth:340, boxShadow:"0 20px 60px rgba(0,0,0,.25)" }}>
         {members.length>0&&!isNew ? (

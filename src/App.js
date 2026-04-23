@@ -1,8 +1,21 @@
+import { useState, useRef, useEffect, useCallback } from "react";
 import { initializeApp } from "firebase/app";
 import {
   getFirestore, collection, doc, onSnapshot,
   setDoc, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp
 } from "firebase/firestore";
+
+// ── Firebase init ──────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyCvMPTbuuoT3vtPHZ-rGVGlxHy__Q0WvbQ",
+  authDomain: "sharemoney-3cf22.firebaseapp.com",
+  projectId: "sharemoney-3cf22",
+  storageBucket: "sharemoney-3cf22.firebasestorage.app",
+  messagingSenderId: "311495146563",
+  appId: "1:311495146563:web:995568a85d2ec62d14e8f6",
+};
+const fbApp = initializeApp(firebaseConfig);
+const db    = getFirestore(fbApp);
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const MEMBER_COLORS = ["#2563EB","#7C3AED","#DC2626","#059669","#D97706","#DB2777","#0891B2","#64748B"];
@@ -37,21 +50,21 @@ const PAYMENT_APPS = [
   { id:"sinopac",  label:"永豐銀行", emoji:"🟡", url:"https://www.banksinopac.com.tw" },
   { id:"custom",   label:"自訂連結", emoji:"✏️", url:"" },
 ];
-const DAYS_ZH = ["日","一","二","三","四","五","六"];
-const todayStr = () => new Date().toISOString().slice(0,10);
-const toTWD  = (amt, code) => Math.round(amt * (CURRENCIES.find(c=>c.code===code)?.rate||1));
-const fmtAmt = (amt, code) => `${CURRENCIES.find(c=>c.code===code)?.symbol||"NT$"}${Number(amt).toLocaleString()}`;
-const getMemberColor = (name, members) => MEMBER_COLORS[members.findIndex(m=>m.name===name) % MEMBER_COLORS.length];
+const DAYS_ZH   = ["日","一","二","三","四","五","六"];
+const todayStr  = () => new Date().toISOString().slice(0,10);
+const toTWD     = (amt, code) => Math.round(amt * (CURRENCIES.find(c=>c.code===code)?.rate||1));
+const fmtAmt    = (amt, code) => `${CURRENCIES.find(c=>c.code===code)?.symbol||"NT$"}${Number(amt).toLocaleString()}`;
+const getMColor = (name, members) => MEMBER_COLORS[members.findIndex(m=>m.name===name) % MEMBER_COLORS.length];
 
-// ── Tiny UI pieces ─────────────────────────────────────────────────────────────
+// ── Small UI ───────────────────────────────────────────────────────────────────
 function Avatar({ name, members, size=36 }) {
-  const bg = getMemberColor(name, members);
   return (
     <div style={{
-      width:size, height:size, borderRadius:"50%", background:bg, flexShrink:0,
+      width:size, height:size, borderRadius:"50%", flexShrink:0,
+      background: getMColor(name, members),
       display:"flex", alignItems:"center", justifyContent:"center",
-      fontWeight:800, fontSize:Math.round(size*0.4), color:"#fff",
-      boxShadow:"0 2px 6px rgba(0,0,0,0.18)"
+      fontWeight:800, fontSize:Math.round(size*.4), color:"#fff",
+      boxShadow:"0 2px 6px rgba(0,0,0,.18)"
     }}>{(name||"?")[0]}</div>
   );
 }
@@ -60,11 +73,10 @@ function Chip({ label, active, color, onClick, small }) {
   return (
     <button onClick={onClick} style={{
       border:"none", cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap",
-      borderRadius:20, padding: small ? "4px 9px" : "6px 13px",
-      fontSize: small ? 11 : 12, fontWeight:700,
-      background: active ? (color||"#2563EB") : "#EFF6FF",
-      color: active ? "#fff" : "#334155",
-      transition:"all 0.15s", flexShrink:0
+      borderRadius:20, padding:small?"4px 9px":"6px 13px",
+      fontSize:small?11:12, fontWeight:700, flexShrink:0, transition:"all .15s",
+      background:active?(color||"#2563EB"):"#EFF6FF",
+      color:active?"#fff":"#334155",
     }}>{label}</button>
   );
 }
@@ -75,7 +87,7 @@ function Toast({ msg }) {
       position:"fixed", bottom:28, left:"50%", transform:"translateX(-50%)",
       background:"#1E3A5F", color:"#fff", borderRadius:14, padding:"10px 22px",
       fontWeight:700, fontSize:14, zIndex:9999, whiteSpace:"nowrap",
-      boxShadow:"0 8px 24px rgba(30,58,95,0.25)", animation:"fadeUp .2s ease"
+      boxShadow:"0 8px 24px rgba(30,58,95,.25)", animation:"fadeUp .2s ease"
     }}>{msg}</div>
   ) : null;
 }
@@ -83,23 +95,36 @@ function Toast({ msg }) {
 function Modal({ children, onClose }) {
   return (
     <div onClick={onClose} style={{
-      position:"fixed", inset:0, background:"rgba(15,23,42,0.5)", zIndex:1000,
+      position:"fixed", inset:0, background:"rgba(15,23,42,.5)", zIndex:1000,
       display:"flex", alignItems:"center", justifyContent:"center", padding:16
     }}>
       <div onClick={e=>e.stopPropagation()} style={{
         background:"#fff", borderRadius:20, padding:24, width:"100%", maxWidth:400,
-        boxShadow:"0 24px 64px rgba(37,99,235,0.18)", maxHeight:"90vh", overflowY:"auto"
+        boxShadow:"0 24px 64px rgba(37,99,235,.18)", maxHeight:"90vh", overflowY:"auto"
       }}>{children}</div>
+    </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:40 }}>
+      <div style={{
+        width:36, height:36, borderRadius:"50%",
+        border:"3px solid #EFF6FF", borderTopColor:"#2563EB",
+        animation:"spin .7s linear infinite"
+      }}/>
     </div>
   );
 }
 
 // ── WeekPicker ─────────────────────────────────────────────────────────────────
 function WeekPicker({ selected, onChange, datesWithData=[] }) {
-  const [offset, setOffset] = useState(0);
+  const [offset,     setOffset]     = useState(0);
   const [showPicker, setShowPicker] = useState(false);
-  const [animDir, setAnimDir] = useState(null); // 'left' | 'right'
-  const today = todayStr();
+  const [animDir,    setAnimDir]    = useState(null);
+  const touchX = useRef(null);
+  const today  = todayStr();
 
   const weekDays = (() => {
     const base = new Date(); base.setDate(base.getDate() + offset*7);
@@ -110,33 +135,24 @@ function WeekPicker({ selected, onChange, datesWithData=[] }) {
     });
   })();
 
-  const weekLabel = offset===0 ? "本週" : offset===-1 ? "上週" : offset===1 ? "下週"
-    : `${new Date(weekDays[0]+"T12:00:00").getMonth()+1}/${new Date(weekDays[0]+"T12:00:00").getDate()} – ${new Date(weekDays[6]+"T12:00:00").getMonth()+1}/${new Date(weekDays[6]+"T12:00:00").getDate()}`;
+  const weekLabel = offset===0?"本週":offset===-1?"上週":offset===1?"下週"
+    :`${new Date(weekDays[0]+"T12:00").getMonth()+1}/${new Date(weekDays[0]+"T12:00").getDate()} – ${new Date(weekDays[6]+"T12:00").getMonth()+1}/${new Date(weekDays[6]+"T12:00").getDate()}`;
 
+  const go = (dir) => { setAnimDir(dir); setOffset(o => o + (dir==="left"?1:-1)); };
   const jumpTo = (d) => {
-    const diff = Math.floor((new Date(d) - new Date(today)) / (7*86400000));
-    setAnimDir(diff > offset ? 'left' : 'right');
-    setOffset(diff);
-    onChange(d);
-    setShowPicker(false);
-  };
-
-  const touchStartX = useRef(null);
-  const onTouchStart = e => { touchStartX.current = e.touches[0].clientX; };
-  const onTouchEnd   = e => {
-    if(touchStartX.current===null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if(Math.abs(dx)>40){ if(dx<0){ setAnimDir('left');  setOffset(o=>o+1); } else { setAnimDir('right'); setOffset(o=>o-1); } }
-    touchStartX.current = null;
+    const diff = Math.floor((new Date(d)-new Date(today))/(7*86400000));
+    setAnimDir(diff>offset?"left":"right");
+    setOffset(diff); onChange(d); setShowPicker(false);
   };
 
   return (
-    <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
-      style={{ background:"#fff", borderRadius:14, padding:"10px 10px 8px", marginBottom:12, boxShadow:"0 2px 10px rgba(37,99,235,0.07)", touchAction:"pan-y", userSelect:"none" }}>
+    <div onTouchStart={e=>{ touchX.current=e.touches[0].clientX; }}
+      onTouchEnd={e=>{ const dx=e.changedTouches[0].clientX-(touchX.current||0); if(Math.abs(dx)>40) go(dx<0?"left":"right"); touchX.current=null; }}
+      style={{ background:"#fff", borderRadius:14, padding:"10px 10px 8px", marginBottom:12, boxShadow:"0 2px 10px rgba(37,99,235,.07)", touchAction:"pan-y", userSelect:"none" }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
         <span style={{ fontSize:12, fontWeight:700, color:"#64748B" }}>{weekLabel}</span>
         <div style={{ display:"flex", gap:5 }}>
-          <button onClick={()=>{ setOffset(0); onChange(today); }} style={wkBtn}>回到今日</button>
+          <button onClick={()=>{ go("right"); onChange(today); setOffset(0); }} style={wkBtn}>回到今日</button>
           <button onClick={()=>setShowPicker(v=>!v)} style={wkBtn}>指定日期</button>
         </div>
       </div>
@@ -150,206 +166,172 @@ function WeekPicker({ selected, onChange, datesWithData=[] }) {
         </div>
       )}
       <div style={{ display:"flex", alignItems:"center" }}>
-        <button onClick={()=>{ setAnimDir('right'); setOffset(o=>o-1); }} style={arrowBtn}>‹</button>
-        <div key={offset} style={{ flex:1, display:"flex", animation: animDir ? (animDir==='left'?'slideLeft .22s ease':'slideRight .22s ease') : 'none' }}
+        <button onClick={()=>go("right")} style={arrowBtn}>‹</button>
+        <div key={offset} style={{ flex:1, display:"flex",
+          animation:animDir?(animDir==="left"?"slideLeft .22s ease":"slideRight .22s ease"):"none" }}
           onAnimationEnd={()=>setAnimDir(null)}>
-        {weekDays.map(d => {
-          const dt = new Date(d+"T12:00:00");
-          const isSel  = d===selected;
-          const isTdy  = d===today;
-          const hasDot = datesWithData.includes(d);
-          return (
-            <button key={d} onClick={()=>onChange(d)} style={{
-              flex:1, border:"none", cursor:"pointer", borderRadius:10, padding:"5px 1px",
-              background: isSel ? "#2563EB" : isTdy ? "#EFF6FF" : "transparent",
-              fontFamily:"inherit", transition:"all .15s"
-            }}>
-              <div style={{ fontSize:11, fontWeight:600, color: isSel?"rgba(255,255,255,.75)": isTdy?"#2563EB":"#94A3B8" }}>{DAYS_ZH[dt.getDay()]}</div>
-              <div style={{ fontSize:15, fontWeight:800, color: isSel?"#fff": isTdy?"#2563EB":"#334155", marginTop:1 }}>{dt.getDate()}</div>
-              <div style={{ height:5, display:"flex", alignItems:"center", justifyContent:"center", marginTop:1 }}>
-                {hasDot && <div style={{ width:4, height:4, borderRadius:"50%", background: isSel?"rgba(255,255,255,.7)": isTdy?"#2563EB":"#94A3B8" }} />}
-              </div>
-            </button>
-          );
-        })}
+          {weekDays.map(d => {
+            const dt    = new Date(d+"T12:00");
+            const isSel = d===selected, isTdy = d===today;
+            const hasDot= datesWithData.includes(d);
+            return (
+              <button key={d} onClick={()=>onChange(d)} style={{
+                flex:1, border:"none", cursor:"pointer", borderRadius:10, padding:"5px 1px",
+                background:isSel?"#2563EB":isTdy?"#EFF6FF":"transparent",
+                fontFamily:"inherit", transition:"all .15s"
+              }}>
+                <div style={{ fontSize:11, fontWeight:600, color:isSel?"rgba(255,255,255,.75)":isTdy?"#2563EB":"#94A3B8" }}>{DAYS_ZH[dt.getDay()]}</div>
+                <div style={{ fontSize:15, fontWeight:800, color:isSel?"#fff":isTdy?"#2563EB":"#334155", marginTop:1 }}>{dt.getDate()}</div>
+                <div style={{ height:5, display:"flex", alignItems:"center", justifyContent:"center", marginTop:1 }}>
+                  {hasDot&&<div style={{ width:4, height:4, borderRadius:"50%", background:isSel?"rgba(255,255,255,.7)":isTdy?"#2563EB":"#94A3B8" }}/>}
+                </div>
+              </button>
+            );
+          })}
         </div>
-        <button onClick={()=>{ setAnimDir('left');  setOffset(o=>o+1); }} style={arrowBtn}>›</button>
+        <button onClick={()=>go("left")} style={arrowBtn}>›</button>
       </div>
     </div>
   );
 }
 
 // ── ExpenseForm ────────────────────────────────────────────────────────────────
-function ExpenseForm({ members, initialData, onSave, onCancel, saveLabel="確認新增" }) {
+function ExpenseForm({ members, initialData, onSave, onCancel, saveLabel="確認新增", loading }) {
   const init = {
     desc:"", amount:"", currency:"TWD",
-    paidBy: members[0]?.name||"",
-    category: CATEGORIES[0].id,
-    splitWith: members.map(m=>m.name),
-    plusOnes:{}, date: todayStr(),
+    paidBy:members[0]?.name||"",
+    category:CATEGORIES[0].id,
+    splitWith:members.map(m=>m.name),
+    plusOnes:{}, date:todayStr(),
     ...(initialData||{})
   };
   const [form, setForm] = useState(init);
-  const [err, setErr]   = useState("");
-
+  const [err,  setErr]  = useState("");
   const set = (k,v) => setForm(p=>({...p,[k]:v}));
 
-  const toggleSplit = name => set("splitWith",
-    form.splitWith.includes(name) ? form.splitWith.filter(x=>x!==name) : [...form.splitWith, name]
-  );
-  const togglePO = name => {
-    const po = {...form.plusOnes};
-    po[name] ? delete po[name] : (po[name]=true);
-    set("plusOnes", po);
-  };
+  const toggleSplit = n => set("splitWith", form.splitWith.includes(n)?form.splitWith.filter(x=>x!==n):[...form.splitWith,n]);
+  const togglePO    = n => { const po={...form.plusOnes}; po[n]?delete po[n]:(po[n]=true); set("plusOnes",po); };
 
-  const splitCount = form.splitWith.reduce((s,n)=>s+1+(form.plusOnes[n]?1:0), 0);
-  const twdAmt     = form.amount ? toTWD(parseFloat(form.amount)||0, form.currency) : 0;
-  const perTWD     = splitCount>0 && twdAmt ? Math.ceil(twdAmt/splitCount) : 0;
-  const isWindfall = form.category==="windfall";
+  const sc       = form.splitWith.reduce((s,n)=>s+1+(form.plusOnes[n]?1:0),0);
+  const twdAmt   = form.amount?toTWD(parseFloat(form.amount)||0,form.currency):0;
+  const perTWD   = sc>0&&twdAmt?Math.ceil(twdAmt/sc):0;
+  const isWF     = form.category==="windfall";
+  const saveBg   = isWF?"#16A34A":"#2563EB";
 
   const validate = () => {
-    if (!form.desc.trim())                          return "請輸入品項說明";
-    if (!form.amount||isNaN(parseFloat(form.amount))) return "請輸入金額";
-    if (!form.paidBy)                               return "請選擇付款人";
-    if (!form.splitWith.length)                     return "請選擇至少一位分攤成員";
+    if(!form.desc.trim())                            return "請輸入品項說明";
+    if(!form.amount||isNaN(parseFloat(form.amount))) return "請輸入金額";
+    if(!form.paidBy)                                 return "請選擇付款人";
+    if(!form.splitWith.length)                       return "請選擇至少一位分攤成員";
     return "";
   };
-
-  const handleSave = () => {
-    const e = validate(); if(e){ setErr(e); return; }
-    setErr("");
-    onSave({ ...form, amount:parseFloat(form.amount), id:form.id||Date.now() });
-  };
-
-  const saveBg = isWindfall ? "#16A34A" : "#2563EB";
+  const handleSave = () => { const e=validate(); if(e){setErr(e);return;} setErr(""); onSave({...form,amount:parseFloat(form.amount),id:form.id||Date.now()}); };
 
   return (
-    <div style={{ background:"#fff", borderRadius:18, boxShadow:"0 4px 20px rgba(37,99,235,0.10)", overflow:"hidden" }}>
-      {err && <div style={{ background:"#FEF2F2", color:"#DC2626", fontSize:12, fontWeight:700, padding:"8px 14px" }}>⚠️ {err}</div>}
-
-      {/* Two-column body */}
+    <div style={{ background:"#fff", borderRadius:18, boxShadow:"0 4px 20px rgba(37,99,235,.10)", overflow:"hidden" }}>
+      {err&&<div style={{ background:"#FEF2F2", color:"#DC2626", fontSize:12, fontWeight:700, padding:"8px 14px" }}>⚠️ {err}</div>}
       <div style={{ display:"flex", minHeight:0 }}>
-
-        {/* ── LEFT col ── */}
+        {/* LEFT */}
         <div style={{ flex:"0 0 50%", width:0, minWidth:0, padding:"12px 6px 10px 12px", borderRight:"1px solid #EFF6FF", boxSizing:"border-box", overflow:"hidden" }}>
-
-          {/* Date */}
           <div style={{ marginBottom:8 }}>
             <div style={lbl}>📅 日期</div>
-            <div style={{ position:"relative", overflow:"hidden", borderRadius:9, border:"1.5px solid #BFDBFE", background:"#F8FBFF" }}>
+            <div style={{ overflow:"hidden", borderRadius:9, border:"1.5px solid #BFDBFE", background:"#F8FBFF" }}>
               <input type="date" value={form.date} onChange={e=>set("date",e.target.value)}
                 style={{ width:"100%", padding:"8px 10px", border:"none", borderRadius:9, fontSize:14,
                   fontFamily:"inherit", background:"transparent", color:"#1E3A5F",
                   boxSizing:"border-box", display:"block", WebkitAppearance:"none", appearance:"none" }} />
             </div>
           </div>
-
-          {/* Desc */}
           <div style={{ marginBottom:8 }}>
             <div style={lbl}>📝 品項</div>
             <input placeholder="說明" value={form.desc} onChange={e=>set("desc",e.target.value)} style={fld} />
           </div>
-
-          {/* Amount */}
           <div style={{ marginBottom:8 }}>
             <div style={lbl}>💵 金額</div>
             <div style={{ display:"flex", gap:4 }}>
               <select value={form.currency} onChange={e=>set("currency",e.target.value)}
-                style={{ ...fld, width:64, flex:"none", padding:"7px 4px", marginBottom:0 }}>
+                style={{ ...fld, width:64, flex:"none", padding:"8px 4px", minWidth:0 }}>
                 {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.code}</option>)}
               </select>
-              <input type="number" placeholder="0" value={form.amount}
-                onChange={e=>set("amount",e.target.value)}
-                style={{ ...fld, flex:1, minWidth:0, marginBottom:0 }} />
+              <input type="number" placeholder="0" value={form.amount} onChange={e=>set("amount",e.target.value)}
+                style={{ ...fld, flex:1, minWidth:0 }} />
             </div>
             {form.currency!=="TWD"&&form.amount&&(
               <div style={{ fontSize:10, color:"#2563EB", fontWeight:600, marginTop:3 }}>≈ NT${twdAmt.toLocaleString()}</div>
             )}
           </div>
-
         </div>
-
-        {/* ── RIGHT col ── */}
+        {/* RIGHT */}
         <div style={{ flex:"0 0 50%", width:0, minWidth:0, padding:"12px 12px 10px 8px", boxSizing:"border-box", overflow:"hidden" }}>
-
-          {/* Paid by */}
           <div style={{ marginBottom:10 }}>
             <div style={lbl}>👤 誰付錢？</div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
               {members.map(m=>(
                 <Chip key={m.name} label={m.name} active={form.paidBy===m.name}
-                  color={getMemberColor(m.name,members)} onClick={()=>set("paidBy",m.name)} small />
+                  color={getMColor(m.name,members)} onClick={()=>set("paidBy",m.name)} small />
               ))}
             </div>
           </div>
-
-          {/* Split with */}
           <div>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
               <div style={lbl}>👥 分攤成員</div>
-              <button onClick={()=>set("splitWith", form.splitWith.length===members.length?[]:members.map(m=>m.name))}
+              <button onClick={()=>set("splitWith",form.splitWith.length===members.length?[]:members.map(m=>m.name))}
                 style={{ fontSize:10, color:"#2563EB", background:"none", border:"none", cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>
                 {form.splitWith.length===members.length?"全取消":"全選"}
               </button>
             </div>
             {members.map(m=>{
-              const inSplit = form.splitWith.includes(m.name);
-              const col     = getMemberColor(m.name, members);
-              const poOn    = form.plusOnes[m.name];
+              const inSplit=form.splitWith.includes(m.name), col=getMColor(m.name,members), poOn=form.plusOnes[m.name];
               return (
                 <div key={m.name} style={{ display:"flex", alignItems:"center", gap:4, marginBottom:5 }}>
                   <button onClick={()=>toggleSplit(m.name)} style={{
                     flex:1, display:"flex", alignItems:"center", gap:5, border:"none", cursor:"pointer",
                     borderRadius:9, padding:"5px 7px", fontFamily:"inherit", minWidth:0,
-                    background: inSplit ? col+"1A" : "#F8FAFC",
-                    outline: inSplit ? `1.5px solid ${col}` : "1.5px solid #E2E8F0",
+                    background:inSplit?col+"1A":"#F8FAFC",
+                    outline:inSplit?`1.5px solid ${col}`:"1.5px solid #E2E8F0",
                   }}>
-                    <Avatar name={m.name} members={members} size={20} />
+                    <Avatar name={m.name} members={members} size={20}/>
                     <span style={{ fontSize:12, fontWeight:700, color:inSplit?col:"#94A3B8", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.name}</span>
                     <span style={{ marginLeft:"auto", fontSize:13, color:inSplit?col:"#CBD5E1", flexShrink:0 }}>{inSplit?"✓":"○"}</span>
                   </button>
-                  {m.hasPlusOne && inSplit && (
+                  {m.hasPlusOne&&inSplit&&(
                     <button onClick={()=>togglePO(m.name)} style={{
                       border:"none", borderRadius:7, padding:"4px 7px", cursor:"pointer", fontFamily:"inherit",
                       background:poOn?"#2563EB":"#EFF6FF", color:poOn?"#fff":"#2563EB",
-                      fontSize:11, fontWeight:800, flexShrink:0
+                      fontSize:13, fontWeight:800, flexShrink:0
                     }}>👫</button>
                   )}
                 </div>
               );
             })}
-            {perTWD>0 && (
-              <div style={{ fontSize:11, color: isWindfall?"#16A34A":"#2563EB", fontWeight:700, background: isWindfall?"#F0FDF4":"#EFF6FF", borderRadius:7, padding:"4px 8px", marginTop:4 }}>
+            {perTWD>0&&(
+              <div style={{ fontSize:11, color:isWF?"#16A34A":"#2563EB", fontWeight:700, background:isWF?"#F0FDF4":"#EFF6FF", borderRadius:7, padding:"4px 8px", marginTop:4 }}>
                 每人 NT${perTWD.toLocaleString()}{form.currency!=="TWD"&&" (換算)"}
               </div>
             )}
           </div>
         </div>
       </div>
-
-      {/* Category - full width below columns */}
+      {/* Category row */}
       <div style={{ padding:"10px 12px 8px", borderTop:"1px solid #EFF6FF" }}>
         <div style={lbl}>🏷️ 類別</div>
         <div style={{ display:"flex", gap:5, overflowX:"auto", paddingBottom:2, scrollbarWidth:"none", WebkitOverflowScrolling:"touch" }}>
           {CATEGORIES.map(cat=>(
             <button key={cat.id} onClick={()=>set("category",cat.id)} style={{
               flexShrink:0, border:"none", borderRadius:20, padding:"6px 12px",
-              background: form.category===cat.id ? (cat.id==="windfall"?"#16A34A":"#2563EB") : "#EFF6FF",
-              color: form.category===cat.id ? "#fff" : "#2563EB",
+              background:form.category===cat.id?(cat.id==="windfall"?"#16A34A":"#2563EB"):"#EFF6FF",
+              color:form.category===cat.id?"#fff":"#2563EB",
               fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap"
             }}>{cat.emoji} {cat.label}</button>
           ))}
         </div>
       </div>
-
       {/* Footer */}
       <div style={{ display:"flex", gap:8, padding:"10px 12px", borderTop:"1px solid #EFF6FF" }}>
-        {onCancel && (
-          <button onClick={onCancel} style={{ ...actionBtn, background:"#F1F5F9", color:"#64748B", flex:1 }}>取消</button>
-        )}
-        <button onClick={handleSave} style={{ ...actionBtn, background:saveBg, color:"#fff", flex:2, transition:"background .3s" }}>
-          {isWindfall?"🍀 ":""}{saveLabel}
+        {onCancel&&<button onClick={onCancel} style={{ ...actionBtn, background:"#F1F5F9", color:"#64748B", flex:1 }}>取消</button>}
+        <button onClick={handleSave} disabled={loading}
+          style={{ ...actionBtn, background:saveBg, color:"#fff", flex:2, opacity:loading?.6:1 }}>
+          {loading?"處理中…":`${isWF?"🍀 ":""}${saveLabel}`}
         </button>
       </div>
     </div>
@@ -363,7 +345,7 @@ function ConfirmDialog({ msg, sub, confirmLabel="確認刪除", confirmColor="#E
       <div style={{ textAlign:"center" }}>
         <div style={{ fontSize:36, marginBottom:10 }}>⚠️</div>
         <div style={{ fontWeight:800, fontSize:16, color:"#1E3A5F", marginBottom:6 }}>{msg}</div>
-        {sub && <div style={{ fontSize:13, color:"#64748B", marginBottom:18 }}>{sub}</div>}
+        {sub&&<div style={{ fontSize:13, color:"#64748B", marginBottom:18 }}>{sub}</div>}
         <div style={{ display:"flex", gap:10, marginTop:18 }}>
           <button onClick={onCancel}  style={{ ...actionBtn, background:"#F1F5F9", color:"#64748B", flex:1 }}>取消</button>
           <button onClick={onConfirm} style={{ ...actionBtn, background:confirmColor, color:"#fff", flex:1 }}>{confirmLabel}</button>
@@ -374,28 +356,27 @@ function ConfirmDialog({ msg, sub, confirmLabel="確認刪除", confirmColor="#E
 }
 
 // ── LoginScreen ────────────────────────────────────────────────────────────────
-function LoginScreen({ members, onLogin }) {
-  const [name, setName] = useState("");
-  const [isNew, setIsNew] = useState(false);
+function LoginScreen({ members, onLogin, bookName, bookColor }) {
+  const [name,  setName]  = useState("");
+  const [isNew, setIsNew] = useState(members.length===0);
   return (
-    <div style={{ minHeight:"100vh", background:"linear-gradient(135deg,#1D4ED8,#3B82F6)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24, fontFamily:"'Noto Sans TC','PingFang TC',sans-serif" }}>
+    <div style={{ minHeight:"100vh", background:`linear-gradient(135deg,${bookColor||"#1D4ED8"},#3B82F6)`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24, fontFamily:"'Noto Sans TC','PingFang TC',sans-serif" }}>
       <div style={{ fontSize:52, marginBottom:12 }}>💳</div>
-      <div style={{ color:"#fff", fontWeight:800, fontSize:28, letterSpacing:1, marginBottom:4 }}>朋友分帳</div>
-      <div style={{ color:"rgba(255,255,255,.7)", fontSize:14, marginBottom:36 }}>出遊記帳、輕鬆分帳</div>
-      <div style={{ background:"#fff", borderRadius:20, padding:24, width:"100%", maxWidth:340, boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
-        {members.length > 0 && !isNew ? (
+      <div style={{ color:"#fff", fontWeight:800, fontSize:26, letterSpacing:1, marginBottom:4 }}>{bookName||"朋友分帳"}</div>
+      <div style={{ color:"rgba(255,255,255,.7)", fontSize:14, marginBottom:32 }}>出遊記帳、輕鬆分帳</div>
+      <div style={{ background:"#fff", borderRadius:20, padding:24, width:"100%", maxWidth:340, boxShadow:"0 20px 60px rgba(0,0,0,.25)" }}>
+        {members.length>0&&!isNew ? (
           <>
-            <div style={{ fontWeight:800, fontSize:16, color:"#1E3A5F", marginBottom:14 }}>選擇你的帳號</div>
+            <div style={{ fontWeight:800, fontSize:16, color:"#1E3A5F", marginBottom:14 }}>你是哪位？</div>
             {members.map(m=>(
               <button key={m.name} onClick={()=>onLogin(m.name)} style={{
                 display:"flex", alignItems:"center", gap:12, width:"100%", border:"none",
                 background:"#F8FBFF", borderRadius:12, padding:"10px 14px", marginBottom:8,
-                cursor:"pointer", fontFamily:"inherit", transition:"all .15s",
-                outline:"1.5px solid #BFDBFE"
+                cursor:"pointer", fontFamily:"inherit", outline:"1.5px solid #BFDBFE"
               }}>
-                <Avatar name={m.name} members={members} size={36} />
+                <Avatar name={m.name} members={members} size={36}/>
                 <span style={{ fontWeight:700, fontSize:15, color:"#1E3A5F" }}>{m.name}</span>
-                {m.hasPlusOne && <span style={{ fontSize:12, color:"#94A3B8", marginLeft:"auto" }}>👫</span>}
+                {m.hasPlusOne&&<span style={{ fontSize:12, color:"#94A3B8", marginLeft:"auto" }}>👫</span>}
               </button>
             ))}
             <button onClick={()=>setIsNew(true)} style={{ ...actionBtn, background:"#EFF6FF", color:"#2563EB", width:"100%", marginTop:6 }}>＋ 我是新成員</button>
@@ -407,163 +388,208 @@ function LoginScreen({ members, onLogin }) {
               onKeyDown={e=>e.key==="Enter"&&name.trim()&&onLogin(name.trim())}
               style={{ ...fld, marginBottom:12 }} autoFocus />
             <button onClick={()=>name.trim()&&onLogin(name.trim())}
-              style={{ ...actionBtn, background:"#2563EB", color:"#fff", width:"100%" }}>進入記帳本</button>
-            {members.length>0 && (
-              <button onClick={()=>setIsNew(false)} style={{ ...actionBtn, background:"transparent", color:"#94A3B8", width:"100%", marginTop:6 }}>← 返回選擇帳號</button>
+              style={{ ...actionBtn, background:bookColor||"#2563EB", color:"#fff", width:"100%" }}>進入記帳本</button>
+            {members.length>0&&(
+              <button onClick={()=>setIsNew(false)} style={{ ...actionBtn, background:"transparent", color:"#94A3B8", width:"100%", marginTop:6 }}>← 返回</button>
             )}
           </>
         )}
       </div>
-      <div style={{ color:"rgba(255,255,255,.5)", fontSize:12, marginTop:24, textAlign:"center" }}>
-        可分享給朋友，大家一起記帳
-      </div>
+      <div style={{ color:"rgba(255,255,255,.5)", fontSize:11, marginTop:20, textAlign:"center" }}>資料即時同步 · 朋友共用</div>
     </div>
   );
 }
 
 // ── Main App ───────────────────────────────────────────────────────────────────
-const INIT_MEMBERS = [
-  { name:"小明", hasPlusOne:false, paymentApp:null, paymentCustomLabel:"", paymentCustomUrl:"" },
-  { name:"小花", hasPlusOne:true,  paymentApp:"ctbc", paymentCustomLabel:"", paymentCustomUrl:"" },
-  { name:"阿宏", hasPlusOne:false, paymentApp:null, paymentCustomLabel:"", paymentCustomUrl:"" },
-];
-const INIT_EXPENSES = [
-  { id:1, desc:"火鍋聚餐", amount:1200, currency:"TWD", paidBy:"小明", category:"food",      splitWith:["小明","小花","阿宏"], plusOnes:{}, date:"2025-04-20" },
-  { id:2, desc:"計程車",   amount:350,  currency:"TWD", paidBy:"小花", category:"transport",  splitWith:["小明","小花"],       plusOnes:{}, date:"2025-04-21" },
-  { id:3, desc:"電影票",   amount:600,  currency:"TWD", paidBy:"阿宏", category:"fun",        splitWith:["小花","阿宏"],       plusOnes:{}, date:"2025-04-22" },
-];
+// Firestore paths:
+//   books/{bookId}              → { name, color, ownerId, archived, createdAt }
+//   books/{bookId}/members/{id} → { name, hasPlusOne, paymentApp, ... }
+//   books/{bookId}/expenses/{id}→ { desc, amount, currency, paidBy, category, splitWith, plusOnes, date, createdAt }
+
+const DEFAULT_BOOK_ID = "default"; // single shared book for now
 
 export default function App() {
+  // ── Firebase state ──
+  const [fbReady,   setFbReady]   = useState(false);
+  const [book,      setBook]      = useState(null);
+  const [members,   setMembers]   = useState([]);
+  const [expenses,  setExpenses]  = useState([]);
+  const [saving,    setSaving]    = useState(false);
+
   // ── Auth ──
-  const [currentUser, setCurrentUser] = useState(null);
-
-  // ── Books ──
-  const [books, setBooks]           = useState([{ id:1, name:"旅遊記帳本", archived:false, ownerId:"小明", color:"#2563EB" }]);
-  const [activeBookId, setActiveBookId] = useState(1);
-  const [showBookMenu, setShowBookMenu] = useState(false);
-  const [showNewBook,  setShowNewBook]  = useState(false);
-  const [newBookName,  setNewBookName]  = useState("");
-  const [newBookColor, setNewBookColor] = useState("#2563EB");
-
-  // ── Per-book data ──
-  const [bookData, setBookData] = useState({ 1:{ members:INIT_MEMBERS, expenses:INIT_EXPENSES } });
-
-  const bd  = bookData[activeBookId] || { members:[], expenses:[] };
-  const setBD = fn => setBookData(p=>({ ...p, [activeBookId]:fn(p[activeBookId]||{members:[],expenses:[]}) }));
-  const members  = bd.members;
-  const expenses = bd.expenses;
-  const setMembers  = fn => setBD(p=>({ ...p, members:  typeof fn==="function"?fn(p.members):fn }));
-  const setExpenses = fn => setBD(p=>({ ...p, expenses: typeof fn==="function"?fn(p.expenses):fn }));
-
-  const activeBook = books.find(b=>b.id===activeBookId);
-  const isOwner    = activeBook?.ownerId === currentUser;
-  const bookColor  = activeBook?.color || "#2563EB";
+  const [currentUser, setCurrentUser] = useState(() => localStorage.getItem("splitpay_user")||null);
 
   // ── UI ──
-  const [tab,          setTab]          = useState("expenses");
-  const [selDate,      setSelDate]      = useState(todayStr());
-  const [inlineEdit,   setInlineEdit]   = useState(null);  // expense being edited inline
-  const [newFormKey,   setNewFormKey]   = useState(0);
-  const [confirmDel,   setConfirmDel]   = useState(null);
-  const [archiveConf,  setArchiveConf]  = useState(false);
-  const [editMember,   setEditMember]   = useState(null);
-  const [newMName,     setNewMName]     = useState("");
-  const [newMPO,       setNewMPO]       = useState(false);
-  const [page,         setPage]         = useState(1);
-  const [toast,        setToast]        = useState(null);
+  const [tab,         setTab]         = useState("expenses");
+  const [selDate,     setSelDate]     = useState(todayStr());
+  const [inlineEdit,  setInlineEdit]  = useState(null);
+  const [newFormKey,  setNewFormKey]  = useState(0);
+  const [confirmDel,  setConfirmDel]  = useState(null);
+  const [archiveConf, setArchiveConf] = useState(false);
+  const [editMember,  setEditMember]  = useState(null);
+  const [newMName,    setNewMName]    = useState("");
+  const [newMPO,      setNewMPO]      = useState(false);
+  const [page,        setPage]        = useState(1);
+  const [toast,       setToast]       = useState(null);
+  const [showBookMenu,setShowBookMenu]= useState(false);
   const PER_PAGE = 7;
 
-  const showToast = msg => { setToast(msg); setTimeout(()=>setToast(null), 2400); };
-  useEffect(()=>{ setPage(1); }, [selDate]);
+  const showToast = msg => { setToast(msg); setTimeout(()=>setToast(null),2400); };
+  useEffect(()=>{ setPage(1); },[selDate]);
 
-  // ── Balances ──
+  // ── Subscribe to Firestore ──
+  useEffect(()=>{
+    const bookRef = doc(db,"books",DEFAULT_BOOK_ID);
+
+    // book doc
+    const unsubBook = onSnapshot(bookRef, snap=>{
+      if(snap.exists()){
+        setBook({ id:snap.id, ...snap.data() });
+      } else {
+        // Create default book on first run
+        setDoc(bookRef,{ name:"旅遊記帳本", color:"#2563EB", ownerId:"", archived:false, createdAt:serverTimestamp() });
+      }
+      setFbReady(true);
+    });
+
+    // members subcollection
+    const unsubMembers = onSnapshot(
+      query(collection(db,"books",DEFAULT_BOOK_ID,"members"), orderBy("createdAt","asc")),
+      snap=>{ setMembers(snap.docs.map(d=>({ id:d.id, ...d.data() }))); }
+    );
+
+    // expenses subcollection
+    const unsubExpenses = onSnapshot(
+      query(collection(db,"books",DEFAULT_BOOK_ID,"expenses"), orderBy("createdAt","asc")),
+      snap=>{ setExpenses(snap.docs.map(d=>({ id:d.id, ...d.data() }))); }
+    );
+
+    return ()=>{ unsubBook(); unsubMembers(); unsubExpenses(); };
+  },[]);
+
+  // ── Balances & Settlements ──
   const balances = Object.fromEntries(members.map(m=>[m.name,0]));
   expenses.forEach(exp=>{
-    const sc = exp.splitWith.reduce((s,n)=>s+1+(exp.plusOnes?.[n]?1:0), 0);
+    const sc  = (exp.splitWith||[]).reduce((s,n)=>s+1+((exp.plusOnes||{})[n]?1:0),0);
     if(!sc) return;
-    const twd   = toTWD(exp.amount, exp.currency);
-    const share = twd / sc;
-    exp.splitWith.forEach(n=>{
-      const shares = 1+(exp.plusOnes?.[n]?1:0);
-      if(n!==exp.paidBy) balances[n] = (balances[n]||0) - share*shares;
+    const twd = toTWD(exp.amount,exp.currency);
+    const sh  = twd/sc;
+    (exp.splitWith||[]).forEach(n=>{
+      const shares=1+((exp.plusOnes||{})[n]?1:0);
+      if(n!==exp.paidBy) balances[n]=(balances[n]||0)-sh*shares;
     });
-    balances[exp.paidBy] = (balances[exp.paidBy]||0) + twd - share*(1+(exp.plusOnes?.[exp.paidBy]?1:0));
+    balances[exp.paidBy]=(balances[exp.paidBy]||0)+twd-sh*(1+((exp.plusOnes||{})[exp.paidBy]?1:0));
   });
 
-  // ── Settlements ──
-  const settlements = [];
-  const dArr = Object.entries(balances).filter(([,v])=>v<-0.01).map(([n,v])=>({name:n,val:v})).sort((a,b)=>a.val-b.val);
-  const cArr = Object.entries(balances).filter(([,v])=>v> 0.01).map(([n,v])=>({name:n,val:v})).sort((a,b)=>b.val-a.val);
-  let di=0, ci=0;
-  while(di<dArr.length && ci<cArr.length){
-    const amt = Math.min(-dArr[di].val, cArr[ci].val);
-    if(amt>0.01) settlements.push({ from:dArr[di].name, to:cArr[ci].name, amount:Math.round(amt) });
+  const settlements=[];
+  const dArr=Object.entries(balances).filter(([,v])=>v<-0.01).map(([n,v])=>({name:n,val:v})).sort((a,b)=>a.val-b.val);
+  const cArr=Object.entries(balances).filter(([,v])=>v>0.01).map(([n,v])=>({name:n,val:v})).sort((a,b)=>b.val-a.val);
+  let di=0,ci=0;
+  while(di<dArr.length&&ci<cArr.length){
+    const amt=Math.min(-dArr[di].val,cArr[ci].val);
+    if(amt>0.01) settlements.push({from:dArr[di].name,to:cArr[ci].name,amount:Math.round(amt)});
     dArr[di].val+=amt; cArr[ci].val-=amt;
     if(Math.abs(dArr[di].val)<0.01) di++;
     if(Math.abs(cArr[ci].val)<0.01) ci++;
   }
 
-  // ── Expense helpers ──
-  const dayExp   = expenses.filter(e=>e.date===selDate).sort((a,b)=>b.id-a.id);
-  const totPages = Math.max(1, Math.ceil(dayExp.length/PER_PAGE));
-  const pagedExp = dayExp.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const dayExp   = expenses.filter(e=>e.date===selDate).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+  const totPages = Math.max(1,Math.ceil(dayExp.length/PER_PAGE));
+  const pagedExp = dayExp.slice((page-1)*PER_PAGE,page*PER_PAGE);
   const datesWithData = [...new Set(expenses.map(e=>e.date))];
-  const totalTWD = expenses.reduce((s,e)=>s+toTWD(e.amount,e.currency), 0);
-  const getCat   = id => CATEGORIES.find(c=>c.id===id)||CATEGORIES[CATEGORIES.length-1];
+  const totalTWD = expenses.reduce((s,e)=>s+toTWD(e.amount,e.currency),0);
+  const getCat   = id=>CATEGORIES.find(c=>c.id===id)||CATEGORIES[CATEGORIES.length-1];
+  const bookColor= book?.color||"#2563EB";
+  const isOwner  = !book?.ownerId || book?.ownerId===currentUser;
 
-  const saveExpense = data => {
-    if(inlineEdit) {
-      setExpenses(p=>p.map(e=>e.id===data.id?data:e));
-      setInlineEdit(null);
-      showToast("✅ 已更新");
-    } else {
-      setExpenses(p=>[...p, {...data, id:Date.now()}]);
-      setNewFormKey(k=>k+1);
-      setSelDate(data.date);
-      showToast("✅ 已新增");
-    }
+  // ── CRUD handlers ──
+  const saveExpense = async data => {
+    setSaving(true);
+    try {
+      const { id, ...rest } = data;
+      const payload = { ...rest, plusOnes:rest.plusOnes||{}, splitWith:rest.splitWith||[] };
+      if(inlineEdit?.id){
+        await updateDoc(doc(db,"books",DEFAULT_BOOK_ID,"expenses",inlineEdit.id), payload);
+        showToast("✅ 已更新"); setInlineEdit(null);
+      } else {
+        await addDoc(collection(db,"books",DEFAULT_BOOK_ID,"expenses"),{ ...payload, createdAt:serverTimestamp() });
+        setNewFormKey(k=>k+1); setSelDate(data.date); showToast("✅ 已新增");
+      }
+    } catch(e){ showToast("❌ 儲存失敗: "+e.message); }
+    setSaving(false);
   };
 
-  const deleteExpense = id => {
-    setExpenses(p=>p.filter(e=>e.id!==id));
-    setConfirmDel(null);
-    showToast("🗑️ 已刪除");
+  const deleteExpense = async id => {
+    try {
+      await deleteDoc(doc(db,"books",DEFAULT_BOOK_ID,"expenses",id));
+      setConfirmDel(null); showToast("🗑️ 已刪除");
+    } catch(e){ showToast("❌ 刪除失敗"); }
   };
 
-  // ── Member helpers ──
-  const addMember = () => {
-    if(!newMName.trim()||members.find(m=>m.name===newMName.trim())) return;
-    setMembers(p=>[...p,{ name:newMName.trim(), hasPlusOne:newMPO, paymentApp:null, paymentCustomLabel:"", paymentCustomUrl:"" }]);
-    setNewMName(""); setNewMPO(false);
-    showToast(`👋 ${newMName.trim()} 已加入`);
-  };
-  const saveMember = updated => { setMembers(p=>p.map(m=>m.name===updated.name?updated:m)); setEditMember(null); showToast("✅ 已儲存"); };
-
-  // ── Book helpers ──
-  const addBook = () => {
-    if(!newBookName.trim()) return;
-    const id = Date.now();
-    setBooks(p=>[...p,{ id, name:newBookName.trim(), archived:false, ownerId:currentUser, color:newBookColor }]);
-    setBookData(p=>({...p,[id]:{ members:[{ name:currentUser, hasPlusOne:false, paymentApp:null, paymentCustomLabel:"", paymentCustomUrl:"" }], expenses:[] }}));
-    setActiveBookId(id); setNewBookName(""); setShowNewBook(false);
-    showToast("📒 新記帳本已建立");
-  };
-  const archiveBook = () => {
-    setBooks(p=>p.map(b=>b.id===activeBookId?{...b,archived:true}:b));
-    setArchiveConf(false); showToast("📦 已封存");
-  };
-
-  // ── Login flow ──
-  const handleLogin = name => {
-    if(!members.find(m=>m.name===name)) {
-      setMembers(p=>[...p,{ name, hasPlusOne:false, paymentApp:null, paymentCustomLabel:"", paymentCustomUrl:"" }]);
-    }
+  const handleLogin = async name => {
+    localStorage.setItem("splitpay_user",name);
     setCurrentUser(name);
+    if(!members.find(m=>m.name===name)){
+      try {
+        await addDoc(collection(db,"books",DEFAULT_BOOK_ID,"members"),{
+          name, hasPlusOne:false, paymentApp:null,
+          paymentCustomLabel:"", paymentCustomUrl:"", createdAt:serverTimestamp()
+        });
+        // Set owner if first member
+        if(members.length===0){
+          await updateDoc(doc(db,"books",DEFAULT_BOOK_ID),{ ownerId:name });
+        }
+      } catch(e){ console.error(e); }
+    }
   };
 
-  if(!currentUser) return <LoginScreen members={members} onLogin={handleLogin} />;
+  const addMember = async () => {
+    if(!newMName.trim()||members.find(m=>m.name===newMName.trim())) return;
+    try {
+      await addDoc(collection(db,"books",DEFAULT_BOOK_ID,"members"),{
+        name:newMName.trim(), hasPlusOne:newMPO, paymentApp:null,
+        paymentCustomLabel:"", paymentCustomUrl:"", createdAt:serverTimestamp()
+      });
+      setNewMName(""); setNewMPO(false); showToast(`👋 ${newMName.trim()} 已加入`);
+    } catch(e){ showToast("❌ 新增失敗"); }
+  };
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  const saveMember = async updated => {
+    try {
+      const { id, ...rest } = updated;
+      await updateDoc(doc(db,"books",DEFAULT_BOOK_ID,"members",id), rest);
+      setEditMember(null); showToast("✅ 已儲存");
+    } catch(e){ showToast("❌ 儲存失敗"); }
+  };
+
+  const removeMember = async id => {
+    try {
+      await deleteDoc(doc(db,"books",DEFAULT_BOOK_ID,"members",id));
+      showToast("已移除");
+    } catch(e){ showToast("❌ 移除失敗"); }
+  };
+
+  const archiveBook = async () => {
+    try {
+      await updateDoc(doc(db,"books",DEFAULT_BOOK_ID),{ archived:true });
+      setArchiveConf(false); showToast("📦 已封存");
+    } catch(e){ showToast("❌ 操作失敗"); }
+  };
+
+  // ── Loading / Login gates ──
+  if(!fbReady) return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(135deg,#1D4ED8,#3B82F6)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Noto Sans TC',sans-serif" }}>
+      <div style={{ textAlign:"center", color:"#fff" }}>
+        <div style={{ fontSize:48, marginBottom:16 }}>💳</div>
+        <Spinner/>
+        <div style={{ marginTop:12, opacity:.7 }}>連線中…</div>
+      </div>
+    </div>
+  );
+
+  if(!currentUser) return <LoginScreen members={members} onLogin={handleLogin} bookName={book?.name} bookColor={bookColor}/>;
+
+  // ── Main render ──────────────────────────────────────────────────────────────
   return (
     <div style={{ fontFamily:"'Noto Sans TC','PingFang TC',sans-serif", background:"#F0F7FF", minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", paddingBottom:80 }}>
 
@@ -573,25 +599,21 @@ export default function App() {
           <div style={{ fontSize:26 }}>💳</div>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ color:"#fff", fontWeight:800, fontSize:18, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-              {activeBook?.name}
-              {activeBook?.archived && <span style={{ fontSize:11, background:"rgba(255,255,255,.2)", borderRadius:8, padding:"2px 7px", marginLeft:7 }}>已封存</span>}
+              {book?.name}
+              {book?.archived&&<span style={{ fontSize:11, background:"rgba(255,255,255,.2)", borderRadius:8, padding:"2px 7px", marginLeft:7 }}>已封存</span>}
             </div>
-            <div style={{ color:"rgba(255,255,255,.7)", fontSize:11, marginTop:1 }}>
-              {members.length} 人 · {expenses.length} 筆 · NT${totalTWD.toLocaleString()}
-            </div>
+            <div style={{ color:"rgba(255,255,255,.7)", fontSize:11, marginTop:1 }}>{members.length} 人 · {expenses.length} 筆 · NT${totalTWD.toLocaleString()}</div>
           </div>
-          {/* Current user chip */}
-          <div style={{ display:"flex", alignItems:"center", gap:5, background:"rgba(255,255,255,.2)", borderRadius:20, padding:"4px 10px 4px 4px", cursor:"pointer" }} onClick={()=>setCurrentUser(null)}>
-            <Avatar name={currentUser} members={members} size={22} />
+          <div onClick={()=>setCurrentUser(null)} style={{ display:"flex", alignItems:"center", gap:5, background:"rgba(255,255,255,.2)", borderRadius:20, padding:"4px 10px 4px 4px", cursor:"pointer" }}>
+            <Avatar name={currentUser} members={members} size={22}/>
             <span style={{ color:"#fff", fontSize:12, fontWeight:700 }}>{currentUser}</span>
           </div>
           <button onClick={()=>setShowBookMenu(v=>!v)} style={{ background:"rgba(255,255,255,.18)", border:"none", borderRadius:10, padding:"7px 9px", cursor:"pointer", color:"#fff", fontSize:17, lineHeight:1 }}>☰</button>
         </div>
-        {/* Member chips */}
         <div style={{ display:"flex", gap:5, marginTop:12, flexWrap:"wrap" }}>
           {members.map(m=>(
             <div key={m.name} style={{ display:"flex", alignItems:"center", gap:4, background:"rgba(255,255,255,.15)", borderRadius:20, padding:"3px 8px 3px 3px" }}>
-              <Avatar name={m.name} members={members} size={18} />
+              <Avatar name={m.name} members={members} size={18}/>
               <span style={{ color:"#fff", fontSize:11, fontWeight:600 }}>{m.name}{m.hasPlusOne&&"👫"}</span>
             </div>
           ))}
@@ -599,62 +621,16 @@ export default function App() {
       </div>
 
       {/* Book menu */}
-      {showBookMenu && (
+      {showBookMenu&&(
         <div style={{ position:"fixed", inset:0, zIndex:900 }} onClick={()=>setShowBookMenu(false)}>
-          <div onClick={e=>e.stopPropagation()} style={{
-            position:"absolute", top:76, right:12, background:"#fff", borderRadius:16,
-            boxShadow:"0 8px 40px rgba(37,99,235,.18)", padding:14, minWidth:210
-          }}>
-            <div style={{ fontWeight:800, color:"#1E3A5F", fontSize:13, marginBottom:8 }}>📒 記帳本</div>
-            {books.filter(b=>!b.archived).map(b=>(
-              <button key={b.id} onClick={()=>{ setActiveBookId(b.id); setShowBookMenu(false); }} style={{
-                display:"flex", alignItems:"center", gap:8, width:"100%", textAlign:"left", border:"none",
-                borderRadius:9, padding:"8px 10px", marginBottom:3, cursor:"pointer", fontFamily:"inherit",
-                background:b.id===activeBookId?"#EFF6FF":"transparent",
-                color:b.id===activeBookId?"#2563EB":"#334155", fontWeight:b.id===activeBookId?800:600, fontSize:13
-              }}>
-                <div style={{ width:10, height:10, borderRadius:"50%", background:b.color||"#2563EB", flexShrink:0 }}/>
-                {b.name}
-              </button>
-            ))}
-            {books.some(b=>b.archived) && <>
-              <div style={{ fontSize:11, color:"#94A3B8", fontWeight:700, margin:"8px 0 4px", paddingTop:8, borderTop:"1px solid #EFF6FF" }}>📦 封存</div>
-              {books.filter(b=>b.archived).map(b=>(
-                <button key={b.id} onClick={()=>{ setActiveBookId(b.id); setShowBookMenu(false); }} style={{
-                  display:"block", width:"100%", textAlign:"left", border:"none", borderRadius:9,
-                  padding:"7px 10px", marginBottom:3, cursor:"pointer", fontFamily:"inherit",
-                  background:"transparent", color:"#94A3B8", fontSize:12
-                }}>📦 {b.name}</button>
-              ))}
-            </>}
-            <div style={{ borderTop:"1px solid #EFF6FF", marginTop:8, paddingTop:8 }}>
-              {!showNewBook ? (
-                <button onClick={()=>setShowNewBook(true)} style={{ ...actionBtn, background:"#EFF6FF", color:"#2563EB", width:"100%", fontSize:12 }}>＋ 新增記帳本</button>
-              ) : (
-                <div>
-                  <input placeholder="記帳本名稱" value={newBookName} onChange={e=>setNewBookName(e.target.value)}
-                    onKeyDown={e=>e.key==="Enter"&&addBook()} style={{ ...fld, marginBottom:7 }} autoFocus />
-                  <div style={{ display:"flex", gap:4, marginBottom:8, flexWrap:"wrap" }}>
-                    {BOOK_COLORS.map(col=>(
-                      <button key={col} onClick={()=>setNewBookColor(col)} style={{
-                        width:22, height:22, borderRadius:"50%", background:col, border:"none", cursor:"pointer",
-                        outline:newBookColor===col?"2.5px solid #1E3A5F":"2.5px solid transparent", outlineOffset:2
-                      }}/>
-                    ))}
-                  </div>
-                  <div style={{ display:"flex", gap:6 }}>
-                    <button onClick={()=>setShowNewBook(false)} style={{ ...actionBtn, background:"#F1F5F9", color:"#64748B", flex:1, fontSize:11 }}>取消</button>
-                    <button onClick={addBook} style={{ ...actionBtn, background:newBookColor, color:"#fff", flex:1, fontSize:11 }}>建立</button>
-                  </div>
-                </div>
-              )}
-              {isOwner && !activeBook?.archived && (
-                <button onClick={()=>{ setArchiveConf(true); setShowBookMenu(false); }}
-                  style={{ ...actionBtn, background:"#FFF7ED", color:"#D97706", width:"100%", fontSize:12, marginTop:6 }}>
-                  📦 封存此記帳本
-                </button>
-              )}
-            </div>
+          <div onClick={e=>e.stopPropagation()} style={{ position:"absolute", top:76, right:12, background:"#fff", borderRadius:16, boxShadow:"0 8px 40px rgba(37,99,235,.18)", padding:14, minWidth:210 }}>
+            <div style={{ fontWeight:800, color:"#1E3A5F", fontSize:13, marginBottom:10 }}>⚙️ 設定</div>
+            {isOwner&&!book?.archived&&(
+              <button onClick={()=>{ setArchiveConf(true); setShowBookMenu(false); }}
+                style={{ ...actionBtn, background:"#FFF7ED", color:"#D97706", width:"100%", fontSize:12 }}>📦 封存此記帳本</button>
+            )}
+            <button onClick={()=>{ setCurrentUser(null); localStorage.removeItem("splitpay_user"); setShowBookMenu(false); }}
+              style={{ ...actionBtn, background:"#F1F5F9", color:"#64748B", width:"100%", fontSize:12, marginTop:6 }}>🔀 切換使用者</button>
           </div>
         </div>
       )}
@@ -674,26 +650,23 @@ export default function App() {
       <div style={{ width:"100%", maxWidth:540, padding:"12px 12px 0" }}>
 
         {/* ══ EXPENSES ══ */}
-        {tab==="expenses" && (
+        {tab==="expenses"&&(
           <div>
-            {/* Always-on new form */}
             <div style={{ marginBottom:12 }}>
               <div style={{ fontWeight:800, fontSize:14, color:"#1E3A5F", marginBottom:7 }}>＋ 新增支出</div>
-              <ExpenseForm key={newFormKey} members={members}
+              <ExpenseForm key={newFormKey} members={members} loading={saving}
                 initialData={{ date:selDate, paidBy:currentUser, splitWith:members.map(m=>m.name), plusOnes:{}, currency:"TWD", desc:"", amount:"", category:CATEGORIES[0].id }}
-                onSave={saveExpense} saveLabel="確認新增" />
+                onSave={saveExpense} saveLabel="確認新增"/>
             </div>
 
-            {/* Week picker */}
-            <WeekPicker selected={selDate} onChange={d=>{ setSelDate(d); setPage(1); }} datesWithData={datesWithData} />
+            <WeekPicker selected={selDate} onChange={d=>{ setSelDate(d); setPage(1); }} datesWithData={datesWithData}/>
 
-            {/* Day header */}
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7 }}>
               <div style={{ fontWeight:800, fontSize:13, color:"#1E3A5F" }}>
                 {selDate===todayStr()?"📅 今日":`📅 ${selDate}`}
                 <span style={{ fontSize:11, color:"#64748B", fontWeight:600, marginLeft:5 }}>({dayExp.length} 筆)</span>
               </div>
-              {totPages>1 && (
+              {totPages>1&&(
                 <div style={{ display:"flex", alignItems:"center", gap:5 }}>
                   <button disabled={page===1} onClick={()=>setPage(p=>p-1)} style={{ ...pgBtn, opacity:page===1?.35:1 }}>‹</button>
                   <span style={{ fontSize:11, color:"#64748B" }}>{page}/{totPages}</span>
@@ -702,49 +675,48 @@ export default function App() {
               )}
             </div>
 
-            {dayExp.length===0 && (
+            {dayExp.length===0&&(
               <div style={{ textAlign:"center", color:"#94A3B8", padding:"28px 0", fontSize:13 }}>
                 {selDate===todayStr()?"今日沒有支出":"這天沒有記錄"}
               </div>
             )}
 
             {pagedExp.map(exp=>{
-              const cat     = getCat(exp.category);
-              const sc      = exp.splitWith.reduce((s,n)=>s+1+(exp.plusOnes?.[n]?1:0), 0);
-              const perTWD  = sc>0 ? Math.ceil(toTWD(exp.amount,exp.currency)/sc) : 0;
-              const isEditing = inlineEdit?.id===exp.id;
+              const cat=getCat(exp.category);
+              const sc=( exp.splitWith||[]).reduce((s,n)=>s+1+((exp.plusOnes||{})[n]?1:0),0);
+              const perTWD=sc>0?Math.ceil(toTWD(exp.amount,exp.currency)/sc):0;
+              const isEditing=inlineEdit?.id===exp.id;
               return (
                 <div key={exp.id} style={{ marginBottom:8 }}>
                   <div style={{
-                    background:"#fff", borderRadius: isEditing?"14px 14px 0 0":"14px",
-                    padding:"11px 12px", display:"flex", alignItems:"center", gap:9,
-                    boxShadow: isEditing?"0 2px 10px rgba(37,99,235,.14)":"0 2px 8px rgba(37,99,235,.07)",
-                    outline: isEditing?`2px solid ${bookColor}`:"none", outlineOffset:-1,
-                    cursor:"pointer"
+                    background:"#fff", borderRadius:isEditing?"14px 14px 0 0":"14px",
+                    padding:"11px 12px", display:"flex", alignItems:"center", gap:9, cursor:"pointer",
+                    boxShadow:isEditing?"0 2px 10px rgba(37,99,235,.14)":"0 2px 8px rgba(37,99,235,.07)",
+                    outline:isEditing?`2px solid ${bookColor}`:"none", outlineOffset:-1,
                   }} onClick={()=>setInlineEdit(isEditing?null:exp)}>
-                    <div style={{ width:36, height:36, borderRadius:9, background:"#EFF6FF", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{cat.emoji}</div>
+                    <div style={{ width:36, height:36, borderRadius:9, background: exp.category==="windfall"?"#F0FDF4":"#EFF6FF", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{cat.emoji}</div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontWeight:700, fontSize:14, color:"#1E3A5F" }}>{exp.desc}</div>
-                      <div style={{ fontSize:11, color:"#94A3B8", marginTop:2 }}>{exp.paidBy} 付 · {exp.splitWith.join("、")}{Object.keys(exp.plusOnes||{}).some(k=>exp.plusOnes[k])&&" +攜伴"}</div>
+                      <div style={{ fontSize:11, color:"#94A3B8", marginTop:2 }}>{exp.paidBy} 付 · {(exp.splitWith||[]).join("、")}{Object.values(exp.plusOnes||{}).some(Boolean)&&" +攜伴"}</div>
                     </div>
                     <div style={{ textAlign:"right", flexShrink:0 }}>
-                      <div style={{ fontWeight:800, fontSize:15, color: exp.category==="windfall"?"#16A34A":bookColor }}>{fmtAmt(exp.amount,exp.currency)}</div>
+                      <div style={{ fontWeight:800, fontSize:15, color:exp.category==="windfall"?"#16A34A":bookColor }}>{fmtAmt(exp.amount,exp.currency)}</div>
                       <div style={{ fontSize:10, color:"#94A3B8" }}>每人 NT${perTWD.toLocaleString()}</div>
                     </div>
                     <button onClick={e=>{ e.stopPropagation(); setConfirmDel(exp.id); }}
                       style={{ background:"none", border:"none", cursor:"pointer", color:"#CBD5E1", fontSize:17, padding:"2px", flexShrink:0 }}>×</button>
                   </div>
-                  {isEditing && (
+                  {isEditing&&(
                     <div style={{ borderRadius:"0 0 14px 14px", overflow:"hidden", outline:`2px solid ${bookColor}`, outlineOffset:-1 }}>
-                      <ExpenseForm key={"e"+exp.id} members={members} initialData={inlineEdit}
-                        onSave={saveExpense} onCancel={()=>setInlineEdit(null)} saveLabel="更新" />
+                      <ExpenseForm key={"e"+exp.id} members={members} initialData={inlineEdit} loading={saving}
+                        onSave={saveExpense} onCancel={()=>setInlineEdit(null)} saveLabel="更新"/>
                     </div>
                   )}
                 </div>
               );
             })}
 
-            {totPages>1 && (
+            {totPages>1&&(
               <div style={{ display:"flex", justifyContent:"center", gap:6, marginTop:8 }}>
                 {Array.from({length:totPages},(_,i)=>(
                   <button key={i} onClick={()=>setPage(i+1)} style={{
@@ -759,7 +731,7 @@ export default function App() {
         )}
 
         {/* ══ SPLIT ══ */}
-        {tab==="split" && (
+        {tab==="split"&&(
           <div>
             <div style={{ background:"#fff", borderRadius:18, padding:16, marginBottom:12, boxShadow:"0 2px 10px rgba(37,99,235,.07)" }}>
               <div style={{ fontWeight:800, fontSize:14, color:"#1E3A5F", marginBottom:12 }}>💳 個人餘額</div>
@@ -767,7 +739,7 @@ export default function App() {
                 const b=balances[m.name]||0;
                 return (
                   <div key={m.name} style={{ display:"flex", alignItems:"center", gap:9, marginBottom:9 }}>
-                    <Avatar name={m.name} members={members} size={34} />
+                    <Avatar name={m.name} members={members} size={34}/>
                     <div style={{ flex:1 }}>
                       <div style={{ fontWeight:700, color:"#1E3A5F", fontSize:14 }}>{m.name}{m.name===currentUser&&<span style={{ fontSize:10, color:bookColor, marginLeft:5, fontWeight:800 }}>（我）</span>}</div>
                       <div style={{ fontSize:10, color:"#94A3B8" }}>{b>0.01?"別人欠你":b<-0.01?"你欠別人":"已結清"}</div>
@@ -779,44 +751,41 @@ export default function App() {
                 );
               })}
             </div>
-
             <div style={{ background:"#fff", borderRadius:18, padding:16, boxShadow:"0 2px 10px rgba(37,99,235,.07)" }}>
               <div style={{ fontWeight:800, fontSize:14, color:"#1E3A5F", marginBottom:12 }}>⚡ 建議結帳方式</div>
               {settlements.length===0
                 ? <div style={{ textAlign:"center", color:"#10B981", fontWeight:700, padding:16 }}>🎉 大家都結清了！</div>
                 : settlements.map((s,i)=>{
-                    const payer = members.find(m=>m.name===s.from);
-                    const app   = payer?.paymentApp ? PAYMENT_APPS.find(a=>a.id===payer.paymentApp) : null;
-                    const url   = payer?.paymentApp==="custom" ? payer.paymentCustomUrl : app?.url;
-                    const label = payer?.paymentApp==="custom" ? (payer.paymentCustomLabel||"自訂") : app?.label;
-                    const emoji = payer?.paymentApp==="custom" ? "✏️" : app?.emoji;
-                    const isMe  = s.from===currentUser;
+                    const payer=members.find(m=>m.name===s.from);
+                    const app=payer?.paymentApp?PAYMENT_APPS.find(a=>a.id===payer.paymentApp):null;
+                    const url=payer?.paymentApp==="custom"?payer.paymentCustomUrl:app?.url;
+                    const label=payer?.paymentApp==="custom"?(payer.paymentCustomLabel||"自訂"):app?.label;
+                    const emoji=payer?.paymentApp==="custom"?"✏️":app?.emoji;
+                    const isMe=s.from===currentUser;
                     return (
-                      <div key={i} style={{ background: isMe?"#EFF6FF":"#F8FBFF", borderRadius:11, padding:"11px 13px", marginBottom:7, outline:isMe?`1.5px solid ${bookColor}`:"none" }}>
+                      <div key={i} style={{ background:isMe?"#EFF6FF":"#F8FBFF", borderRadius:11, padding:"11px 13px", marginBottom:7, outline:isMe?`1.5px solid ${bookColor}`:"none" }}>
                         <div style={{ display:"flex", alignItems:"center", gap:7 }}>
                           <Avatar name={s.from} members={members} size={30}/>
                           <span style={{ color:"#94A3B8", fontSize:11 }}>→</span>
                           <Avatar name={s.to}   members={members} size={30}/>
                           <div style={{ flex:1, marginLeft:3 }}>
-                            <span style={{ fontWeight:700, color:"#1E3A5F", fontSize:13 }}>{s.from}{s.from===currentUser&&" 👈 我"}</span>
+                            <span style={{ fontWeight:700, color:"#1E3A5F", fontSize:13 }}>{s.from}{isMe&&" 👈 我"}</span>
                             <span style={{ color:"#94A3B8", fontSize:11 }}> 付給 </span>
-                            <span style={{ fontWeight:700, color:"#1E3A5F", fontSize:12 }}>{s.to}</span>
+                            <span style={{ fontWeight:700, color:"#1E3A5F", fontSize:13 }}>{s.to}</span>
                           </div>
                           <div style={{ fontWeight:800, color:"#EF4444", fontSize:15 }}>NT${s.amount}</div>
                         </div>
-                        {isMe && url && (
+                        {isMe&&url&&(
                           <a href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration:"none" }}>
-                            <div style={{ marginTop:8, display:"flex", alignItems:"center", gap:7, background:"#1D4ED8", borderRadius:8, padding:"8px 12px", cursor:"pointer" }}>
+                            <div style={{ marginTop:8, display:"flex", alignItems:"center", gap:7, background:"#1D4ED8", borderRadius:8, padding:"8px 12px" }}>
                               <span style={{ fontSize:14 }}>{emoji}</span>
                               <span style={{ color:"#fff", fontWeight:700, fontSize:12 }}>開啟 {label} 付款</span>
                               <span style={{ marginLeft:"auto", color:"rgba(255,255,255,.5)", fontSize:11 }}>↗</span>
                             </div>
                           </a>
                         )}
-                        {isMe && !url && (
-                          <div style={{ marginTop:5, fontSize:10, color:"#CBD5E1", textAlign:"center" }}>
-                            前往成員頁面設定你的慣用付款方式
-                          </div>
+                        {isMe&&!url&&(
+                          <div style={{ marginTop:5, fontSize:10, color:"#CBD5E1", textAlign:"center" }}>前往成員頁面設定你的慣用付款方式</div>
                         )}
                       </div>
                     );
@@ -827,14 +796,14 @@ export default function App() {
         )}
 
         {/* ══ MEMBERS ══ */}
-        {tab==="members" && (
+        {tab==="members"&&(
           <div>
             {members.map(m=>{
-              const isEditing = editMember?.name===m.name;
-              const paid = expenses.filter(e=>e.paidBy===m.name).reduce((s,e)=>s+toTWD(e.amount,e.currency),0);
-              const appInfo = m.paymentApp ? PAYMENT_APPS.find(a=>a.id===m.paymentApp) : null;
+              const isEditing=editMember?.id===m.id;
+              const paid=expenses.filter(e=>e.paidBy===m.name).reduce((s,e)=>s+toTWD(e.amount,e.currency),0);
+              const appInfo=m.paymentApp?PAYMENT_APPS.find(a=>a.id===m.paymentApp):null;
               return (
-                <div key={m.name} style={{ background:"#fff", borderRadius:14, marginBottom:9, boxShadow:"0 2px 8px rgba(37,99,235,.07)", overflow:"hidden" }}>
+                <div key={m.id} style={{ background:"#fff", borderRadius:14, marginBottom:9, boxShadow:"0 2px 8px rgba(37,99,235,.07)", overflow:"hidden" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:9, padding:"11px 13px" }}>
                     <Avatar name={m.name} members={members} size={40}/>
                     <div style={{ flex:1, minWidth:0 }}>
@@ -852,20 +821,20 @@ export default function App() {
                       {isEditing?"關閉":"設定"}
                     </button>
                     {isOwner&&members.length>2&&(
-                      <button onClick={()=>{ setMembers(p=>p.filter(x=>x.name!==m.name)); showToast(`已移除 ${m.name}`); }}
+                      <button onClick={()=>removeMember(m.id)}
                         style={{ background:"#FEF2F2", border:"none", borderRadius:8, padding:"5px 9px", cursor:"pointer", color:"#EF4444", fontSize:11, fontWeight:700, fontFamily:"inherit", marginLeft:2 }}>
                         移除
                       </button>
                     )}
                   </div>
-                  {isEditing && (
+                  {isEditing&&(
                     <div style={{ borderTop:"1px solid #EFF6FF", padding:"12px 13px", background:"#F8FBFF" }}>
                       <div style={{ marginBottom:10 }}>
                         <div style={lbl}>👫 是否有攜伴可能？</div>
                         <div style={{ display:"flex", gap:7 }}>
                           {[true,false].map(v=>(
-                            <Chip key={String(v)} label={v?"是（有攜伴）":"否"} active={editMember.hasPlusOne===v} color={bookColor}
-                              onClick={()=>setEditMember(p=>({...p,hasPlusOne:v}))} />
+                            <Chip key={String(v)} label={v?"是":"否"} active={editMember.hasPlusOne===v} color={bookColor}
+                              onClick={()=>setEditMember(p=>({...p,hasPlusOne:v}))}/>
                           ))}
                         </div>
                       </div>
@@ -881,14 +850,14 @@ export default function App() {
                             }}>{a.emoji} {a.label}</button>
                           ))}
                         </div>
-                        {editMember.paymentApp==="custom" && (
+                        {editMember.paymentApp==="custom"&&(
                           <>
                             <input placeholder="自訂名稱" value={editMember.paymentCustomLabel||""}
                               onChange={e=>setEditMember(p=>({...p,paymentCustomLabel:e.target.value}))}
-                              style={{ ...fld, marginBottom:6 }} />
+                              style={{ ...fld, marginBottom:6 }}/>
                             <input placeholder="連結網址 https://…" value={editMember.paymentCustomUrl||""}
                               onChange={e=>setEditMember(p=>({...p,paymentCustomUrl:e.target.value}))}
-                              style={{ ...fld, marginBottom:0 }} />
+                              style={fld}/>
                           </>
                         )}
                       </div>
@@ -902,31 +871,28 @@ export default function App() {
               );
             })}
 
-            {/* Add member */}
-            {isOwner && (
+            {isOwner&&(
               <div style={{ background:"#fff", borderRadius:14, padding:14, boxShadow:"0 2px 8px rgba(37,99,235,.07)" }}>
                 <div style={{ fontWeight:800, fontSize:14, color:"#1E3A5F", marginBottom:10 }}>＋ 新增成員</div>
                 <input placeholder="輸入暱稱" value={newMName} onChange={e=>setNewMName(e.target.value)}
-                  onKeyDown={e=>e.key==="Enter"&&addMember()} style={{ ...fld, marginBottom:8 }} />
+                  onKeyDown={e=>e.key==="Enter"&&addMember()} style={{ ...fld, marginBottom:8 }}/>
                 <div style={{ marginBottom:10 }}>
                   <div style={lbl}>是否有攜伴可能？</div>
                   <div style={{ display:"flex", gap:7 }}>
                     {[false,true].map(v=>(
-                      <Chip key={String(v)} label={v?"是":"否"} active={newMPO===v} color={bookColor} onClick={()=>setNewMPO(v)} />
+                      <Chip key={String(v)} label={v?"是":"否"} active={newMPO===v} color={bookColor} onClick={()=>setNewMPO(v)}/>
                     ))}
                   </div>
                 </div>
                 <button onClick={addMember} style={{ ...actionBtn, background:bookColor, color:"#fff", width:"100%", marginBottom:14 }}>加入成員</button>
-
-                {/* Invite */}
                 <div style={{ borderTop:"1px solid #EFF6FF", paddingTop:12 }}>
-                  <div style={{ fontWeight:700, fontSize:12, color:"#1E3A5F", marginBottom:6 }}>🔗 邀請朋友</div>
-                  <div style={{ background:"#EFF6FF", borderRadius:9, padding:"7px 10px", fontSize:11, color:bookColor, display:"flex", alignItems:"center", gap:6, wordBreak:"break-all" }}>
-                    <span style={{ flex:1 }}>https://splitpay.app/join/{activeBookId}</span>
-                    <button onClick={()=>{ navigator.clipboard?.writeText(`https://splitpay.app/join/${activeBookId}`).catch(()=>{}); showToast("📋 已複製連結"); }}
-                      title="複製" style={{ background:bookColor, border:"none", borderRadius:6, width:26, height:26, color:"#fff", cursor:"pointer", fontSize:13, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontFamily:"inherit" }}>⧉</button>
+                  <div style={{ fontWeight:700, fontSize:12, color:"#1E3A5F", marginBottom:6 }}>🔗 邀請朋友加入</div>
+                  <div style={{ background:"#EFF6FF", borderRadius:9, padding:"7px 10px", fontSize:11, color:bookColor, display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ flex:1, wordBreak:"break-all" }}>https://sharemoney-3cf22.web.app</span>
+                    <button onClick={()=>{ navigator.clipboard?.writeText("https://sharemoney-3cf22.web.app").catch(()=>{}); showToast("📋 已複製連結"); }}
+                      title="複製" style={{ background:bookColor, border:"none", borderRadius:6, width:26, height:26, color:"#fff", cursor:"pointer", fontSize:13, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>⧉</button>
                   </div>
-                  <div style={{ fontSize:10, color:"#94A3B8", marginTop:5 }}>朋友點連結後可輸入暱稱加入</div>
+                  <div style={{ fontSize:10, color:"#94A3B8", marginTop:5 }}>朋友開啟連結後輸入暱稱即可加入</div>
                 </div>
               </div>
             )}
@@ -934,32 +900,25 @@ export default function App() {
         )}
       </div>
 
-      {/* Modals */}
-      {confirmDel && (
-        <ConfirmDialog msg="確定刪除這筆支出？" sub="刪除後無法復原" onConfirm={()=>deleteExpense(confirmDel)} onCancel={()=>setConfirmDel(null)} />
-      )}
-      {archiveConf && (
-        <ConfirmDialog msg={`封存「${activeBook?.name}」？`} sub="封存後無法繼續新增支出"
-          confirmLabel="確認封存" confirmColor="#D97706"
-          onConfirm={archiveBook} onCancel={()=>setArchiveConf(false)} />
-      )}
-
-      <Toast msg={toast} />
+      {confirmDel&&<ConfirmDialog msg="確定刪除這筆支出？" sub="刪除後無法復原" onConfirm={()=>deleteExpense(confirmDel)} onCancel={()=>setConfirmDel(null)}/>}
+      {archiveConf&&<ConfirmDialog msg={`封存「${book?.name}」？`} sub="封存後無法繼續新增支出" confirmLabel="確認封存" confirmColor="#D97706" onConfirm={archiveBook} onCancel={()=>setArchiveConf(false)}/>}
+      <Toast msg={toast}/>
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;800&display=swap');
         * { box-sizing:border-box; }
         input:focus,select:focus { outline:none; border-color:#2563EB !important; }
         ::-webkit-scrollbar { display:none; }
-        @keyframes fadeUp { from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)} }
-        @keyframes slideLeft  { from{opacity:.4;transform:translateX(18px)} to{opacity:1;transform:translateX(0)} }
-        @keyframes slideRight { from{opacity:.4;transform:translateX(-18px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes fadeUp    { from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)} }
+        @keyframes slideLeft { from{opacity:.4;transform:translateX(18px)}to{opacity:1;transform:translateX(0)} }
+        @keyframes slideRight{ from{opacity:.4;transform:translateX(-18px)}to{opacity:1;transform:translateX(0)} }
+        @keyframes spin      { to{transform:rotate(360deg)} }
       `}</style>
     </div>
   );
 }
 
-// ── Shared style tokens ────────────────────────────────────────────────────────
+// ── Style tokens ───────────────────────────────────────────────────────────────
 const fld = {
   width:"100%", maxWidth:"100%", padding:"8px 10px", border:"1.5px solid #BFDBFE", borderRadius:9,
   fontSize:14, fontFamily:"inherit", background:"#F8FBFF", color:"#1E3A5F",
@@ -967,7 +926,7 @@ const fld = {
 };
 const lbl = {
   fontSize:11, fontWeight:700, color:"#64748B", marginBottom:5,
-  textTransform:"uppercase", letterSpacing:0.4, display:"block"
+  textTransform:"uppercase", letterSpacing:.4, display:"block"
 };
 const actionBtn = {
   border:"none", borderRadius:10, padding:"10px 16px",

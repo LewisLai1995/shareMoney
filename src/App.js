@@ -61,6 +61,19 @@ const getMColor= (name, members) => MEMBER_COLORS[Math.max(0,members.findIndex(m
 const randCode = () => Math.random().toString(36).slice(2,8).toUpperCase();
 const hashPw   = async pw => { const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw)); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join(""); };
 
+// ── useThemeColor hook ────────────────────────────────────────────────────────
+function useThemeColor(color) {
+  useEffect(()=>{
+    const meta = document.querySelector("meta[name='theme-color']");
+    if(meta) meta.setAttribute("content", color);
+    document.body.style.background = color;
+    return ()=>{
+      if(meta) meta.setAttribute("content","#2563EB");
+      document.body.style.background = "#1D4ED8";
+    };
+  },[color]);
+}
+
 // ── Donut Chart ────────────────────────────────────────────────────────────────
 function DonutChart({ data, total, size=160 }) {
   const r = 54, cx = 80, cy = 80, stroke = 20;
@@ -853,6 +866,9 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
       {unarchiveConf&&<ConfirmDialog msg={`解除封存「${book?.name}」？`} confirmLabel="解除封存" confirmColor="#16A34A" onConfirm={async()=>{ await updateDoc(doc(db,"books",bookId),{archived:false}); setUnarchiveConf(false); showToast("🔓 已解除封存"); }} onCancel={()=>setUnarchiveConf(false)}/>}
       <Toast msg={toast}/>
 
+      {/* Bottom safe area color bar */}
+      <div style={{ position:"fixed",bottom:0,left:0,right:0,height:"env(safe-area-inset-bottom, 0px)",background:bookColor,zIndex:999 }}/>
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;800&display=swap');
         *{box-sizing:border-box;} input:focus,select:focus{outline:none;border-color:#2563EB!important;} ::-webkit-scrollbar{display:none;}
@@ -862,6 +878,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
         @keyframes slideRight{from{opacity:.4;transform:translateX(-18px)}to{opacity:1;transform:translateX(0)}}
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+        html,body{background:${bookColor};}
       `}</style>
     </div>
   );
@@ -1081,6 +1098,12 @@ function HomeScreen({ currentUser, onEnterBook }) {
   };
 
   useThemeColor("#2563EB");
+  useEffect(()=>{
+    const meta=document.querySelector("meta[name='theme-color']");
+    if(meta) meta.setAttribute("content","#2563EB");
+    document.body.style.background="#1D4ED8";
+  },[]);
+
   if(loading) return <Spinner fullscreen/>;
   const active=books.filter(b=>!b.archived), archived=books.filter(b=>b.archived);
 

@@ -22,7 +22,7 @@ const db = getFirestore(fbApp);
 const MEMBER_COLORS = ["#2563EB","#7C3AED","#DC2626","#059669","#D97706","#DB2777","#0891B2","#64748B"];
 const BOOK_COLORS   = ["#2563EB","#7C3AED","#DC2626","#059669","#D97706","#DB2777","#0891B2","#374151"];
 const BOOK_EMOJIS   = ["💳","✈️","🏖️","🍜","🎮","🎉","🏕️","🛒","🎵","⚽","🐶","🌸"];
-const USER_EMOJIS   = ["😀","😎","🥳","🤩","🦊","🐱","🐼","🦁","🐸","🦄","🍕","🌈"];
+const USER_EMOJIS   = ["🐱","🐶","🐼","🦊","🐸","🐯","🦁","🐨","🐮","🐷","🐻","🐺","🦝","🐹","🐰","🦄","🐙","🐧","🦋","🦊"];
 const CURRENCIES    = [
   { code:"TWD", symbol:"NT$", rate:1 },
   { code:"USD", symbol:"$",   rate:32 },
@@ -45,12 +45,12 @@ const CATEGORIES = [
 const PAYMENT_APPS = [
   { id:"linepay", label:"LINE Pay", emoji:"💚", url:"https://line.me/R/pay" },
   { id:"jkopay",  label:"街口支付", emoji:"🟠", url:"https://jkopay.com/app" },
-  { id:"allpay",  label:"全支付",   emoji:"🔵", url:"https://www.allpay.com.tw" },
-  { id:"esun",    label:"玉山銀行", emoji:"🏔️", url:"esunbank://" },
-  { id:"ctbc",    label:"中國信託", emoji:"🏦", url:"ctbcbank://" },
-  { id:"taishin", label:"台新銀行", emoji:"🔴", url:"taishinbank://" },
-  { id:"land",    label:"土地銀行", emoji:"🟢", url:"landbank://" },
-  { id:"sinopac", label:"永豐銀行", emoji:"🟡", url:"sinopacbank://" },
+  { id:"allpay",  label:"全支付",   emoji:"🔵", url:"https://allpay.page.link/app" },
+  { id:"esun",    label:"玉山銀行", emoji:"🏔️", url:"https://esunonline.esunbank.com.tw" },
+  { id:"ctbc",    label:"中國信託", emoji:"🏦", url:"https://www.ctbcbank.com/IB/index.html" },
+  { id:"taishin", label:"台新銀行", emoji:"🔴", url:"https://mma.taishinbank.com.tw" },
+  { id:"land",    label:"土地銀行", emoji:"🟢", url:"https://ebank.landbank.com.tw" },
+  { id:"sinopac", label:"永豐銀行", emoji:"🟡", url:"https://ebank.banksinopac.com.tw" },
   { id:"custom",  label:"自訂",     emoji:"✏️", url:"" },
 ];
 const DAYS_ZH  = ["日","一","二","三","四","五","六"];
@@ -459,6 +459,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
   const totalTWD = expenses.reduce((s,e)=>s+toTWD(e.amount,e.currency),0);
   const getCat   = id=>CATEGORIES.find(c=>c.id===id)||CATEGORIES[CATEGORIES.length-1];
   const bookColor= book?.color||"#2563EB";
+  useThemeColor(bookColor);
   const isOwner  = book?.ownerId===currentUser;
   const isArchived = book?.archived||false;
   const inviteLink = `${window.location.origin}?join=${bookId}`;
@@ -542,7 +543,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
   if(!fbReady) return <Spinner fullscreen/>;
 
   return (
-    <div style={{ fontFamily:"'Noto Sans TC','PingFang TC',sans-serif",background:"#F0F7FF",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",paddingBottom:80 }}>
+    <div style={{ fontFamily:"'Noto Sans TC','PingFang TC',sans-serif",background:"#F0F7FF",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",paddingBottom:80, paddingTop:"env(safe-area-inset-top)", paddingBottom:"calc(80px + env(safe-area-inset-bottom))" }}>
 
       {/* Header */}
       <div style={{ width:"100%",maxWidth:540,background:`linear-gradient(135deg,${bookColor}ee,${bookColor})`,padding:"20px 18px 16px",borderRadius:"0 0 24px 24px",boxShadow:`0 8px 28px ${bookColor}44` }}>
@@ -584,7 +585,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
             <button onClick={()=>{ setShowInvite(true); setShowMenu(false); }} style={{ ...actionBtn,background:"#EFF6FF",color:bookColor,width:"100%",fontSize:12,marginBottom:6 }}>🔗 邀請朋友加入</button>
             {isOwner&&!isArchived&&<button onClick={()=>{ setArchiveConf(true); setShowMenu(false); }} style={{ ...actionBtn,background:"#FFF7ED",color:"#D97706",width:"100%",fontSize:12,marginBottom:6 }}>📦 封存記帳本</button>}
             {isOwner&&isArchived&&<button onClick={()=>{ setUnarchiveConf(true); setShowMenu(false); }} style={{ ...actionBtn,background:"#F0FDF4",color:"#16A34A",width:"100%",fontSize:12,marginBottom:6 }}>🔓 解除封存</button>}
-            <button onClick={()=>{ onOpenSettings(); setShowMenu(false); }} style={{ ...actionBtn,background:"#F1F5F9",color:"#64748B",width:"100%",fontSize:12 }}>⚙️ 個人設定</button>
+            <button onClick={()=>{ if(window.confirm("確定要切換帳號嗎？")) { localStorage.removeItem("splitpay_user"); localStorage.removeItem("splitpay_book"); window.location.reload(); } setShowMenu(false); }} style={{ ...actionBtn,background:"#F1F5F9",color:"#64748B",width:"100%",fontSize:12 }}>🔀 切換帳號</button>
           </div>
         </div>
       )}
@@ -939,8 +940,8 @@ function SettingsPanel({ currentUser, userProfile, members, bookId, onClose, onS
         </div>
 
         <div style={{ display:"flex",gap:8 }}>
-          <button onClick={onSwitchUser} style={{ ...actionBtn,background:"#F1F5F9",color:"#64748B",flex:1,fontSize:12 }}>🔀 切換帳號</button>
-          <button onClick={save} disabled={saving} style={{ ...actionBtn,background:bookColor,color:"#fff",flex:2 }}>{saving?"儲存中…":"儲存"}</button>
+
+          <button onClick={save} disabled={saving} style={{ ...actionBtn,background:bookColor,color:"#fff",width:"100%" }}>{saving?"儲存中…":"儲存"}</button>
         </div>
       </div>
     </Modal>
@@ -948,7 +949,7 @@ function SettingsPanel({ currentUser, userProfile, members, bookId, onClose, onS
 }
 
 // ── JoinScreen ─────────────────────────────────────────────────────────────────
-function JoinScreen({ bookId, onDone }) {
+function JoinScreen({ bookId, currentUser, onDone }) {
   const [book,    setBook]    = useState(null);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -989,6 +990,7 @@ function JoinScreen({ bookId, onDone }) {
   };
 
   const bg=book?.color||"#2563EB";
+  useThemeColor(bg);
   if(loading) return <Spinner fullscreen/>;
   if(!book) return <div style={{ minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"sans-serif" }}><div style={{ textAlign:"center" }}><div style={{ fontSize:48 }}>😕</div><div>找不到記帳本</div></div></div>;
 
@@ -1011,18 +1013,21 @@ function JoinScreen({ bookId, onDone }) {
         )}
         {step==="name"&&(
           <>
-            <div style={{ fontWeight:800,fontSize:16,color:"#1E3A5F",marginBottom:14 }}>你是哪位？</div>
+            <div style={{ fontWeight:800,fontSize:16,color:"#1E3A5F",marginBottom:4 }}>記帳成員</div>
+            <div style={{ fontSize:12,color:"#94A3B8",marginBottom:12 }}>目前的成員</div>
             {members.map(m=>(
-              <button key={m.name} onClick={()=>{ if(m.passwordHash) setStep("pw_"+m.name); else join(m.name); }} style={{ display:"flex",alignItems:"center",gap:12,width:"100%",border:"none",background:"#F8FBFF",borderRadius:12,padding:"10px 14px",marginBottom:8,cursor:"pointer",fontFamily:"inherit",outline:"1.5px solid #BFDBFE" }}>
-                <Avatar name={m.name} emoji={m.emoji} members={members} size={34}/>
-                <span style={{ fontWeight:700,fontSize:14,color:"#1E3A5F" }}>{m.nickname||m.name}</span>
-                {m.passwordHash&&<span style={{ marginLeft:"auto",fontSize:12,color:"#94A3B8" }}>🔒</span>}
-              </button>
+              <div key={m.name} style={{ display:"flex",alignItems:"center",gap:10,background:"#F8FAFC",borderRadius:10,padding:"8px 12px",marginBottom:6,outline:"1px solid #E2E8F0" }}>
+                <Avatar name={m.name} emoji={m.emoji} members={members} size={30}/>
+                <span style={{ fontWeight:700,fontSize:13,color:"#64748B" }}>{m.nickname||m.name}</span>
+                {m.passwordHash&&<span style={{ marginLeft:"auto",fontSize:11,color:"#CBD5E1" }}>🔒 已有帳號</span>}
+              </div>
             ))}
-            <div style={{ borderTop:"1px solid #EFF6FF",paddingTop:12,marginTop:4 }}>
-              <div style={{ fontSize:12,color:"#94A3B8",marginBottom:8 }}>或輸入新暱稱加入</div>
-              <input placeholder="暱稱" value={name} onChange={e=>setName(e.target.value)} style={{ ...fld,marginBottom:8 }}/>
-              <button onClick={()=>join()} style={{ ...actionBtn,background:bg,color:"#fff",width:"100%" }}>加入</button>
+            <div style={{ borderTop:"1px solid #EFF6FF",paddingTop:14,marginTop:8 }}>
+              <div style={{ fontSize:13,fontWeight:700,color:"#1E3A5F",marginBottom:8 }}>請輸入你的暱稱</div>
+              <input placeholder="你的暱稱" value={name} onChange={e=>setName(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&name.trim()&&join()}
+                style={{ ...fld,marginBottom:10 }} autoFocus/>
+              <button onClick={()=>join()} style={{ ...actionBtn,background:bg,color:"#fff",width:"100%" }}>加入記帳本</button>
             </div>
           </>
         )}
@@ -1053,6 +1058,7 @@ function HomeScreen({ currentUser, onEnterBook }) {
   const [newColor, setNewColor] = useState("#2563EB");
   const [newEmoji, setNewEmoji] = useState("💳");
   const [creating, setCreating] = useState(false);
+  const [newBookNickname, setNewBookNickname] = useState("");
 
   useEffect(()=>{
     const u=onSnapshot(query(collection(db,"books"),orderBy("createdAt","asc")),snap=>{ setBooks(snap.docs.map(d=>({id:d.id,...d.data()}))); setLoading(false); });
@@ -1066,13 +1072,15 @@ function HomeScreen({ currentUser, onEnterBook }) {
       const inviteCode=randCode();
       const ref=await addDoc(collection(db,"books"),{ name:newName.trim(),color:newColor,emoji:newEmoji,ownerId:currentUser,archived:false,inviteCode,createdAt:serverTimestamp() });
       const profile=JSON.parse(localStorage.getItem("splitpay_profile")||"{}");
-      await addDoc(collection(db,"books",ref.id,"members"),{ name:currentUser,...profile,hasPlusOne:false,paymentApp:null,paymentCustomLabel:"",paymentCustomUrl:"",createdAt:serverTimestamp() });
+      await addDoc(collection(db,"books",ref.id,"members"),{ name:currentUser,...profile,nickname:newBookNickname.trim()||currentUser,hasPlusOne:false,paymentApp:null,paymentCustomLabel:"",paymentCustomUrl:"",createdAt:serverTimestamp() });
+      setNewBookNickname("");
       localStorage.setItem("splitpay_book",ref.id);
       onEnterBook(ref.id);
     } catch(e){ alert("建立失敗: "+e.message); }
     setCreating(false);
   };
 
+  useThemeColor("#2563EB");
   if(loading) return <Spinner fullscreen/>;
   const active=books.filter(b=>!b.archived), archived=books.filter(b=>b.archived);
 
@@ -1104,7 +1112,8 @@ function HomeScreen({ currentUser, onEnterBook }) {
           : (
             <div style={{ background:"#fff",borderRadius:16,padding:18,marginTop:8,boxShadow:"0 2px 12px rgba(37,99,235,.09)" }}>
               <div style={{ fontWeight:800,fontSize:15,color:"#1E3A5F",marginBottom:12 }}>建立新記帳本</div>
-              <input placeholder="記帳本名稱（例：京都旅遊）" value={newName} onChange={e=>setNewName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&createBook()} style={{ ...fld,marginBottom:10 }} autoFocus/>
+              <input placeholder="記帳本名稱（例：京都旅遊）" value={newName} onChange={e=>setNewName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&createBook()} style={{ ...fld,marginBottom:6 }} autoFocus/>
+              <input placeholder={`你在此記帳本的暱稱（預設：${currentUser}）`} value={newBookNickname} onChange={e=>setNewBookNickname(e.target.value)} style={{ ...fld,marginBottom:10 }}/>
               <div style={lbl}>選擇顏色</div>
               <div style={{ display:"flex",gap:6,marginBottom:12,flexWrap:"wrap" }}>
                 {BOOK_COLORS.map(col=><button key={col} onClick={()=>setNewColor(col)} style={{ width:28,height:28,borderRadius:"50%",background:col,border:"none",cursor:"pointer",outline:newColor===col?"2.5px solid #1E3A5F":"2.5px solid transparent",outlineOffset:2 }}/>)}
@@ -1126,7 +1135,7 @@ function HomeScreen({ currentUser, onEnterBook }) {
 }
 
 // ── LoginScreen ────────────────────────────────────────────────────────────────
-function LoginScreen({ onLogin }) {
+function LoginScreen({ onLogin, pendingJoin }) {
   const [name, setName] = useState("");
   const [pw,   setPw]   = useState("");
   const [selEmoji,setSelEmoji]=useState("");
@@ -1152,6 +1161,7 @@ function LoginScreen({ onLogin }) {
     localStorage.setItem("splitpay_users", JSON.stringify(users));
     localStorage.setItem("splitpay_user", name.trim());
     localStorage.setItem("splitpay_profile", JSON.stringify({ emoji:selEmoji }));
+    if(pendingJoin) localStorage.setItem("splitpay_pending_join", pendingJoin);
     onLogin(name.trim());
   };
 
@@ -1163,9 +1173,11 @@ function LoginScreen({ onLogin }) {
     if(hash!==u.passwordHash){ setErr("密碼不正確"); return; }
     localStorage.setItem("splitpay_user", name.trim());
     localStorage.setItem("splitpay_profile", JSON.stringify({ emoji:u.emoji }));
+    if(pendingJoin) localStorage.setItem("splitpay_pending_join", pendingJoin);
     onLogin(name.trim());
   };
 
+  useThemeColor("#1D4ED8");
   return (
     <div style={{ minHeight:"100vh",background:"linear-gradient(135deg,#1D4ED8,#3B82F6)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'Noto Sans TC',sans-serif" }}>
       <div style={{ fontSize:52,marginBottom:12 }}>💳</div>
@@ -1236,11 +1248,20 @@ export default function App() {
     return u;
   },[activeBookId]);
 
-  const handleLogin = name => { setCurrentUser(name); };
+  const handleLogin = name => {
+    setCurrentUser(name);
+    // If there was a pending join from invite link
+    const pj = localStorage.getItem("splitpay_pending_join");
+    if(pj){ localStorage.removeItem("splitpay_pending_join"); window.location.search = "?join="+pj; }
+  };
   const handleSwitchUser = () => { localStorage.removeItem("splitpay_user"); localStorage.removeItem("splitpay_book"); setCurrentUser(null); setActiveBookId(null); };
   const handleJoinDone = (name,bookId) => { setCurrentUser(name); setActiveBookId(bookId); };
 
-  if(joinBookId) return <JoinScreen bookId={joinBookId} onDone={handleJoinDone}/>;
+  if(joinBookId) {
+    // If not logged in yet, go login first then join
+    if(!currentUser) return <LoginScreen onLogin={handleLogin} pendingJoin={joinBookId}/>;
+    return <JoinScreen bookId={joinBookId} currentUser={currentUser} onDone={handleJoinDone}/>;
+  }
   if(!currentUser) return <LoginScreen onLogin={handleLogin}/>;
   if(!activeBookId) return <HomeScreen currentUser={currentUser} onEnterBook={id=>{ setActiveBookId(id); }}/>;
 
@@ -1275,3 +1296,21 @@ const actionBtn = { border:"none",borderRadius:10,padding:"10px 16px",cursor:"po
 const wkBtn = { fontSize:10,fontWeight:700,background:"#EFF6FF",color:"#2563EB",border:"none",borderRadius:7,padding:"3px 8px",cursor:"pointer",fontFamily:"inherit" };
 const arrowBtn = { background:"none",border:"none",cursor:"pointer",color:"#94A3B8",fontSize:16,padding:"0 3px",lineHeight:1,flexShrink:0 };
 const pgBtn = { background:"#EFF6FF",border:"none",borderRadius:7,width:26,height:26,cursor:"pointer",color:"#2563EB",fontSize:15,fontWeight:700,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center" };
+
+// ── useThemeColor: syncs status bar + body bg to book color ───────────────────
+function useThemeColor(color) {
+  useEffect(()=>{
+    const c = color||"#2563EB";
+    // Update <meta name="theme-color">
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if(!meta){ meta=document.createElement("meta"); meta.name="theme-color"; document.head.appendChild(meta); }
+    meta.content = c;
+    // Update body background so top/bottom overscroll areas match
+    document.body.style.background = c;
+    document.documentElement.style.background = c;
+    return ()=>{
+      document.body.style.background = "#1D4ED8";
+      document.documentElement.style.background = "#1D4ED8";
+    };
+  },[color]);
+}

@@ -1,0 +1,26 @@
+{
+  "name": "Accounting book NOMO-1",
+  "short_name": "NOMO-1",
+  "description": "朋友出遊記帳、輕鬆分帳",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1D4ED8",
+  "theme_color": "#2563EB",
+  "lang": "zh-TW",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "utilities"]
+}

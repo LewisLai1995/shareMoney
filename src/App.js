@@ -1110,7 +1110,7 @@ function HomeScreen({ currentUser, onEnterBook }) {
   return (
     <div style={{ minHeight:"100vh",background:"linear-gradient(160deg,#EFF6FF 0%,#F0F7FF 100%)",fontFamily:"'Noto Sans TC',sans-serif",display:"flex",flexDirection:"column",alignItems:"center",padding:"40px 16px 80px" }}>
       <div style={{ fontSize:44,marginBottom:8 }}>💳</div>
-      <div style={{ fontWeight:800,fontSize:22,color:"#1E3A5F",marginBottom:4 }}>朋友分帳</div>
+      <div style={{ fontWeight:800,fontSize:22,color:"#1E3A5F",marginBottom:4 }}>Accounting Boog ● NOMO</div>
       <div style={{ fontSize:13,color:"#64748B",marginBottom:28 }}>嗨，{currentUser}！選擇或建立記帳本</div>
       <div style={{ width:"100%",maxWidth:400 }}>
         {active.map(b=>(

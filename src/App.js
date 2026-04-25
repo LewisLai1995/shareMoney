@@ -604,7 +604,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
             <button onClick={()=>{ setShowInvite(true); setShowMenu(false); }} style={{ ...actionBtn,background:"#EFF6FF",color:bookColor,width:"100%",fontSize:12,marginBottom:6 }}>🔗 邀請朋友加入</button>
             {isOwner&&!isArchived&&<button onClick={()=>{ setArchiveConf(true); setShowMenu(false); }} style={{ ...actionBtn,background:"#FFF7ED",color:"#D97706",width:"100%",fontSize:12,marginBottom:6 }}>📦 封存記帳本</button>}
             {isOwner&&isArchived&&<button onClick={()=>{ setUnarchiveConf(true); setShowMenu(false); }} style={{ ...actionBtn,background:"#F0FDF4",color:"#16A34A",width:"100%",fontSize:12,marginBottom:6 }}>🔓 解除封存</button>}
-            <button onClick={()=>{ setShowInstallGuide(true); setShowMenu(false); }} style={{ ...actionBtn,background:"#EFF6FF",color:"#2563EB",width:"100%",fontSize:12,marginBottom:6 }}>📲 加入手機桌面</button>
+            <button onClick={()=>{ setShowInstallGuide(true); setShowMenu(false); }} style={{ ...actionBtn,background:"#EFF6FF",color:"#2563EB",width:"100%",fontSize:12,marginBottom:6 }}>📲 建立捷徑教學</button>
             <button onClick={()=>{ if(window.confirm("確定要切換帳號嗎？")) { localStorage.removeItem("splitpay_user"); localStorage.removeItem("splitpay_book"); window.location.reload(); } setShowMenu(false); }} style={{ ...actionBtn,background:"#F1F5F9",color:"#64748B",width:"100%",fontSize:12 }}>🔀 切換帳號</button>
           </div>
         </div>
@@ -620,7 +620,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
               <div style={{ fontSize:11,color:"#64748B",marginBottom:4 }}>邀請連結</div>
               <div style={{ fontSize:11,color:bookColor,wordBreak:"break-all",marginBottom:8 }}>{inviteLink}</div>
               <button onClick={async()=>{
-              const shareText = `🎉 ${currentUser} 邀請你加入「${book?.name}」記帳本！\n\n點開連結，輸入邀請碼就可以一起記帳分帳 👇\n${inviteLink}\n\n邀請碼：${book?.inviteCode}`;
+              const shareText = `🎉 ${currentUser} 邀請你加入「${book?.name}」記帳本！\n點開連結，點選加入記帳本，輸入邀請碼就可以一起記帳分帳 👇\n${inviteLink}\n\n邀請碼：${book?.inviteCode}`;
               if(navigator.share){
                 try{ await navigator.share({ title:"加入記帳本 NOMO-1", text:shareText, url:inviteLink }); }
                 catch(e){ await navigator.clipboard?.writeText(shareText); showToast("📋 已複製邀請訊息"); }
@@ -893,7 +893,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
               <div style={{ fontWeight:700,fontSize:14,color:"#16A34A",marginBottom:8 }}>🤖 Android（Chrome）</div>
               <div style={{ fontSize:13,color:"#334155",lineHeight:1.8 }}>1. 用 <b>Chrome</b> 開啟此網址<br/>2. 點右上角 <b>⋮ 選單</b><br/>3. 選「<b>加入主畫面</b>」或<br/>　 等待底部安裝提示<br/>4. 點「<b>安裝</b>」完成！</div>
             </div>
-            <button onClick={()=>setShowInstallGuide(false)} style={{ ...actionBtn,background:"#2563EB",color:"#fff",width:"100%" }}>了解了！</button>
+            <button onClick={()=>setShowInstallGuide(false)} style={{ ...actionBtn,background:"#2563EB",color:"#fff",width:"100%",letterSpacing:1 }}>GOT IT! 👍</button>
           </div>
         </Modal>
       )}
@@ -1049,7 +1049,7 @@ function JoinScreen({ bookId, currentUser, onDone }) {
   if(!book) return <div style={{ minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"sans-serif" }}><div style={{ textAlign:"center" }}><div style={{ fontSize:48 }}>😕</div><div>找不到記帳本</div></div></div>;
 
   return (
-    <div style={{ minHeight:"100vh",background:`linear-gradient(135deg,${bg}dd,${bg})`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'Noto Sans TC',sans-serif" }}>
+    <div style={{ minHeight:"100vh",background:`linear-gradient(160deg,${bg} 0%,${bg}bb 60%,${bg}88 100%)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'Noto Sans TC',sans-serif",overflowY:"auto" }}>
       <div style={{ fontSize:48,marginBottom:8 }}>{book.emoji||"💳"}</div>
       <div style={{ color:"#fff",fontWeight:800,fontSize:22,marginBottom:4 }}>{book.name}</div>
       <div style={{ color:"rgba(255,255,255,.7)",fontSize:13,marginBottom:20 }}>{members.length} 位成員 · 你被邀請加入</div>
@@ -1117,7 +1117,7 @@ function JoinScreen({ bookId, currentUser, onDone }) {
               <div style={{ fontWeight:700,fontSize:14,color:"#16A34A",marginBottom:8 }}>🤖 Android（Chrome）</div>
               <div style={{ fontSize:13,color:"#334155",lineHeight:1.8 }}>1. 用 <b>Chrome</b> 開啟此網址<br/>2. 點右上角 <b>⋮ 選單</b><br/>3. 選「<b>加入主畫面</b>」或<br/>　 等待底部安裝提示<br/>4. 點「<b>安裝</b>」完成！</div>
             </div>
-            <button onClick={()=>setShowInstall(false)} style={{ ...actionBtn,background:"#2563EB",color:"#fff",width:"100%" }}>了解了！</button>
+            <button onClick={()=>setShowInstall(false)} style={{ ...actionBtn,background:"#2563EB",color:"#fff",width:"100%",letterSpacing:1 }}>GOT IT! 👍</button>
           </div>
         </Modal>
       )}
@@ -1138,6 +1138,10 @@ function HomeScreen({ currentUser, onEnterBook }) {
   const [newBookUserEmoji, setNewBookUserEmoji] = useState("");
   const [bookFormErr, setBookFormErr] = useState(false);
   const [bookFormShake, setBookFormShake] = useState(false);
+  const [showJoinBook, setShowJoinBook] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [joinCodeErr, setJoinCodeErr] = useState("");
+  const [joiningBook, setJoiningBook] = useState(false);
 
   useEffect(()=>{
     const u=onSnapshot(query(collection(db,"books"),orderBy("createdAt","asc")), async snap=>{
@@ -1156,6 +1160,28 @@ function HomeScreen({ currentUser, onEnterBook }) {
     });
     return u;
   },[currentUser]);
+
+  const joinExistingBook = async () => {
+    if(!joinCode.trim()){ setJoinCodeErr("請輸入邀請碼"); return; }
+    setJoiningBook(true);
+    try {
+      // Search all books for matching inviteCode
+      const allBooks = await getDocs(query(collection(db,"books")));
+      const match = allBooks.docs.find(d=>d.data().inviteCode===joinCode.trim().toUpperCase());
+      if(!match){ setJoinCodeErr("找不到此邀請碼，請確認後再試"); setJoiningBook(false); return; }
+      const bookId = match.id;
+      // Add user as member if not already
+      const membersSnap = await getDocs(collection(db,"books",bookId,"members"));
+      const exists = membersSnap.docs.find(d=>d.data().name===currentUser);
+      if(!exists){
+        const profile = JSON.parse(localStorage.getItem("splitpay_profile")||"{}");
+        await addDoc(collection(db,"books",bookId,"members"),{ name:currentUser,...profile,hasPlusOne:false,paymentApp:null,paymentCustomLabel:"",paymentCustomUrl:"",createdAt:serverTimestamp() });
+      }
+      localStorage.setItem("splitpay_book",bookId);
+      onEnterBook(bookId);
+    } catch(e){ setJoinCodeErr("加入失敗："+e.message); }
+    setJoiningBook(false);
+  };
 
   const createBook = async () => {
     if(!newName.trim()){ setBookFormErr(true); setBookFormShake(true); setTimeout(()=>setBookFormShake(false),500); return; }
@@ -1186,8 +1212,8 @@ function HomeScreen({ currentUser, onEnterBook }) {
   return (
     <div style={{ minHeight:"100vh",background:"linear-gradient(160deg,#EFF6FF 0%,#F0F7FF 100%)",fontFamily:"'Noto Sans TC',sans-serif",display:"flex",flexDirection:"column",alignItems:"center",padding:"40px 16px 80px" }}>
       <div style={{ fontSize:44,marginBottom:8 }}>💳</div>
-      <div style={{ fontWeight:800,fontSize:22,color:"#1E3A5F",marginBottom:2,textAlign:"center" }}>Accounting Book</div>
-      <div style={{ fontWeight:800,fontSize:18,color:"#2563EB",marginBottom:4,letterSpacing:2 }}>NOMO</div>
+      <div style={{ fontWeight:800,fontSize:16,color:"#2563EB",marginBottom:2,letterSpacing:4,textAlign:"center" }}>NOMO</div>
+      <div style={{ fontWeight:800,fontSize:24,color:"#1E3A5F",marginBottom:4,textAlign:"center" }}>Money Check²</div>
       <div style={{ fontSize:13,color:"#64748B",marginBottom:28 }}>嗨，{currentUser}！選擇或建立記帳本</div>
       <div style={{ width:"100%",maxWidth:400 }}>
         {active.map(b=>(
@@ -1207,6 +1233,25 @@ function HomeScreen({ currentUser, onEnterBook }) {
             <div style={{ flex:1,textAlign:"left" }}><div style={{ fontWeight:700,fontSize:14,color:"#64748B" }}>{b.name}</div></div>
           </button>
         ))}
+        {/* Join existing book */}
+        {showJoinBook ? (
+          <div style={{ background:"#fff",borderRadius:16,padding:18,marginTop:8,boxShadow:"0 2px 12px rgba(37,99,235,.09)" }}>
+            <div style={{ fontWeight:800,fontSize:15,color:"#1E3A5F",marginBottom:4 }}>加入記帳本</div>
+            <div style={{ fontSize:12,color:"#94A3B8",marginBottom:12 }}>輸入朋友給你的邀請碼</div>
+            <input placeholder="邀請碼（例：SZCFEO）" value={joinCode}
+              onChange={e=>{ setJoinCode(e.target.value.toUpperCase()); setJoinCodeErr(""); }}
+              onKeyDown={e=>e.key==="Enter"&&joinExistingBook()}
+              style={{ ...fld,marginBottom:8,textAlign:"center",fontSize:20,letterSpacing:4,fontWeight:800 }} autoFocus/>
+            {joinCodeErr&&<div style={{ color:"#DC2626",fontSize:12,marginBottom:8,textAlign:"center" }}>❌ {joinCodeErr}</div>}
+            <div style={{ display:"flex",gap:8 }}>
+              <button onClick={()=>{ setShowJoinBook(false); setJoinCode(""); setJoinCodeErr(""); }} style={{ ...actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>取消</button>
+              <button onClick={joinExistingBook} disabled={joiningBook} style={{ ...actionBtn,background:"#2563EB",color:"#fff",flex:2,opacity:joiningBook?.6:1 }}>{joiningBook?"加入中…":"加入"}</button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={()=>setShowJoinBook(true)} style={{ ...actionBtn,background:"#EFF6FF",color:"#2563EB",width:"100%",marginTop:8,padding:"13px 16px",fontSize:15,border:"1.5px solid #BFDBFE" }}>🔗 加入記帳本（輸入邀請碼）</button>
+        )}
+
         {!showNew
           ? <button onClick={()=>setShowNew(true)} style={{ ...actionBtn,background:"#2563EB",color:"#fff",width:"100%",marginTop:8,padding:"13px 16px",fontSize:15 }}>＋ 建立新記帳本</button>
           : (

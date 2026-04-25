@@ -39,19 +39,18 @@ const CATEGORIES = [
   { id:"shopping",  label:"購物",    emoji:"🛒", color:"#10B981" },
   { id:"medical",   label:"醫療",    emoji:"💊", color:"#EF4444" },
   { id:"proxy",     label:"代購",    emoji:"📦", color:"#64748B" },
-  { id:"windfall",  label:"意外之財",emoji:"🍀", color:"#16A34A" },
   { id:"other",     label:"其他",    emoji:"📌", color:"#94A3B8" },
 ];
 const PAYMENT_APPS = [
-  { id:"linepay", label:"LINE Pay", emoji:"💚", url:"https://line.me/R/pay" },
-  { id:"jkopay",  label:"街口支付", emoji:"🟠", url:"https://jkopay.com/app" },
-  { id:"allpay",  label:"全支付",   emoji:"🔵", url:"https://allpay.page.link/app" },
-  { id:"esun",    label:"玉山銀行", emoji:"🏔️", url:"https://esunonline.esunbank.com.tw" },
-  { id:"ctbc",    label:"中國信託", emoji:"🏦", url:"https://www.ctbcbank.com/IB/index.html" },
-  { id:"taishin", label:"台新銀行", emoji:"🔴", url:"https://mma.taishinbank.com.tw" },
-  { id:"land",    label:"土地銀行", emoji:"🟢", url:"https://ebank.landbank.com.tw" },
-  { id:"sinopac", label:"永豐銀行", emoji:"🟡", url:"https://ebank.banksinopac.com.tw" },
-  { id:"custom",  label:"自訂",     emoji:"✏️", url:"" },
+  { id:"linepay", label:"LINE Pay", emoji:"💚", appScheme:"line://pay", iosStore:"https://apps.apple.com/tw/app/line/id443904275", androidStore:"https://play.google.com/store/apps/details?id=jp.naver.line.android" },
+  { id:"jkopay",  label:"街口支付", emoji:"🟠", appScheme:"jkopay://", iosStore:"https://apps.apple.com/tw/app/%E8%A1%97%E5%8F%A3%E6%94%AF%E4%BB%98/id1198002009", androidStore:"https://play.google.com/store/apps/details?id=com.jkopay.app" },
+  { id:"allpay",  label:"全支付",   emoji:"🔵", appScheme:"allpay://", iosStore:"https://apps.apple.com/tw/app/%E5%85%A8%E6%94%AF%E4%BB%98/id1609540474", androidStore:"https://play.google.com/store/apps/details?id=com.allpay.wallet" },
+  { id:"esun",    label:"玉山銀行", emoji:"🏔️", appScheme:"esunbank://", iosStore:"https://apps.apple.com/tw/app/%E7%8E%89%E5%B1%B1%E9%8A%80%E8%A1%8C/id382006912", androidStore:"https://play.google.com/store/apps/details?id=com.esunbank.mobile" },
+  { id:"ctbc",    label:"中國信託", emoji:"🏦", appScheme:"ctbcbank://", iosStore:"https://apps.apple.com/tw/app/%E4%B8%AD%E5%9C%8B%E4%BF%A1%E8%A8%97/id370486914", androidStore:"https://play.google.com/store/apps/details?id=com.chinatrust.mobilebank" },
+  { id:"taishin", label:"台新銀行", emoji:"🔴", appScheme:"taishinbank://", iosStore:"https://apps.apple.com/tw/app/%E5%8F%B0%E6%96%B0%E9%8A%80%E8%A1%8C/id476439722", androidStore:"https://play.google.com/store/apps/details?id=com.taishinbank.mobile" },
+  { id:"land",    label:"土地銀行", emoji:"🟢", appScheme:"landbank://", iosStore:"https://apps.apple.com/tw/app/%E5%9C%9F%E9%8A%80%E8%A1%8C/id1439401022", androidStore:"https://play.google.com/store/apps/details?id=com.landbank.mobile" },
+  { id:"sinopac", label:"永豐銀行", emoji:"🟡", appScheme:"sinopacbank://", iosStore:"https://apps.apple.com/tw/app/%E6%B0%B8%E8%B1%90%E9%8A%80%E8%A1%8C/id465573698", androidStore:"https://play.google.com/store/apps/details?id=com.banksinopac.mobilebank" },
+  { id:"custom",  label:"自訂",     emoji:"✏️", appScheme:"", iosStore:"", androidStore:"" },
 ];
 const DAYS_ZH  = ["日","一","二","三","四","五","六"];
 const todayStr = () => new Date().toISOString().slice(0,10);
@@ -178,7 +177,7 @@ function WeekPicker({ selected, onChange, datesWithData=[], datesFlagged=[] }) {
       {showPicker&&(
         <div style={{ overflow:"hidden",borderRadius:9,border:"1.5px solid #BFDBFE",background:"#F8FBFF",marginBottom:6 }}>
           <input type="date" defaultValue={selected} autoFocus onChange={e=>e.target.value&&jumpTo(e.target.value)}
-            style={{ width:"100%",padding:"7px 10px",border:"none",fontSize:13,fontFamily:"inherit",boxSizing:"border-box",background:"transparent",color:"#1E3A5F",WebkitAppearance:"none",appearance:"none" }}/>
+            onBlur={()=>setShowPicker(false)} style={{ width:"100%",padding:"7px 10px",border:"none",fontSize:13,fontFamily:"inherit",boxSizing:"border-box",background:"transparent",color:"#1E3A5F",WebkitAppearance:"none",appearance:"none" }}/>
         </div>
       )}
       <div style={{ display:"flex",alignItems:"center" }}>
@@ -220,7 +219,7 @@ function ExpenseForm({ members, initialData, onSave, onCancel, saveLabel="確認
   const perTWD = sc>0&&twdAmt?twdAmt/sc:0;
   // Rounding: who pays extra $1
   const base   = Math.floor(perTWD), extra = Math.round(twdAmt - base*sc);
-  const isWF   = form.category==="windfall";
+  const isWF = false;
   const saveBg = isWF?"#16A34A":bookColor;
 
   const validate = () => {
@@ -294,14 +293,14 @@ function ExpenseForm({ members, initialData, onSave, onCancel, saveLabel="確認
             {members.map(m=>{
               const inSplit=form.splitWith.includes(m.name),col=getMColor(m.name,members),poOn=form.plusOnes[m.name];
               return (
-                <div key={m.name} style={{ display:"flex",alignItems:"center",gap:4,marginBottom:5 }}>
+                <div key={m.name} style={{ display:"flex",alignItems:"center",gap:4,marginBottom:5,minHeight:34 }}>
                   <button onClick={()=>toggleSplit(m.name)} style={{ flex:1,display:"flex",alignItems:"center",gap:5,border:"none",cursor:"pointer",borderRadius:9,padding:"5px 7px",fontFamily:"inherit",minWidth:0,background:inSplit?col+"1A":"#F8FAFC",outline:inSplit?`1.5px solid ${col}`:"1.5px solid #E2E8F0" }}>
                     <Avatar name={m.name} emoji={m.emoji} members={members} size={20}/>
                     <span style={{ fontSize:12,fontWeight:700,color:inSplit?col:"#94A3B8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{m.nickname||m.name}</span>
                     <span style={{ marginLeft:"auto",fontSize:13,color:inSplit?col:"#CBD5E1",flexShrink:0 }}>{inSplit?"✓":"○"}</span>
                   </button>
                   {m.hasPlusOne&&inSplit&&(
-                    <button onClick={()=>togglePO(m.name)} style={{ border:"none",borderRadius:7,padding:"4px 7px",cursor:"pointer",fontFamily:"inherit",background:poOn?bookColor:"#EFF6FF",color:poOn?"#fff":bookColor,fontSize:15,flexShrink:0 }}>🫥</button>
+                    <button onClick={()=>togglePO(m.name)} style={{ border:"none",borderRadius:7,padding:"4px 7px",cursor:"pointer",fontFamily:"inherit",background:poOn?bookColor:"#EFF6FF",color:poOn?"#fff":bookColor,fontSize:11,fontWeight:800,flexShrink:0 }}>+1</button>
                   )}
                 </div>
               );
@@ -423,6 +422,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
   const [showMenu,    setShowMenu]    = useState(false);
   const [showInvite,  setShowInvite]  = useState(false);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
+  const swipeTouchX = useRef(null);
   const [spinnerData, setSpinnerData] = useState(null);
   const [flagging,    setFlagging]    = useState(null); // expense id being flagged
   const [flagNote,    setFlagNote]    = useState("");
@@ -511,7 +511,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
     setSaving(true);
     try {
       const { id, ...rest } = data;
-      const payload = { ...rest, plusOnes:rest.plusOnes||{}, splitWith:rest.splitWith||[], createdBy:currentUser };
+      const payload = { ...rest, plusOnes:rest.plusOnes||{}, splitWith:rest.splitWith||[], createdBy:currentUser, flags:{} };
       // Check if needs rounding spinner
       const sw=rest.splitWith||[], po=rest.plusOnes||{};
       const sc=sw.reduce((s,n)=>s+1+(po[n]?1:0),0);
@@ -530,7 +530,10 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
       };
 
       if(needsSpin && !inlineEdit) {
-        setSpinnerData({ names:sw, onDone: async (winner)=>{ setSpinnerData(null); await doSave(winner); setSaving(false); } });
+        // Use nicknames for spinner display
+        const displayNames = sw.map(n=>{ const m=members.find(x=>x.name===n); return m?.nickname||n; });
+        const nameMap = Object.fromEntries(sw.map((n,i)=>[displayNames[i],n]));
+        setSpinnerData({ names:displayNames, onDone: async (winnerDisplay)=>{ setSpinnerData(null); const winnerReal=nameMap[winnerDisplay]||winnerDisplay; await doSave(winnerReal); setSaving(false); } });
       } else {
         await doSave(null); setSaving(false);
       }
@@ -562,10 +565,10 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
   if(!fbReady) return <Spinner fullscreen/>;
 
   return (
-    <div style={{ fontFamily:"'Noto Sans TC','PingFang TC',sans-serif",background:"#F0F7FF",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",paddingBottom:"calc(80px + env(safe-area-inset-bottom, 0px))" }}>
+    <div onTouchStart={e=>{ swipeTouchX.current=e.touches[0].clientX; }} onTouchEnd={e=>{ const dx=e.changedTouches[0].clientX-(swipeTouchX.current||0); if(dx>80){ onBack(); } swipeTouchX.current=null; }} style={{ fontFamily:"'Noto Sans TC','PingFang TC',sans-serif",background:"#F0F7FF",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",paddingBottom:"calc(80px + env(safe-area-inset-bottom, 0px))" }}>
 
       {/* Header */}
-      <div style={{ width:"100%",maxWidth:540,background:`linear-gradient(135deg,${bookColor}ee,${bookColor})`,padding:"calc(env(safe-area-inset-top, 0px) + 20px) 18px 16px",borderRadius:"0 0 24px 24px",boxShadow:`0 8px 28px ${bookColor}44` }}>
+      <div style={{ width:"100%",maxWidth:540,background:`linear-gradient(135deg,${bookColor}ee,${bookColor})`,padding:"calc(env(safe-area-inset-top, 0px) + 16px) 18px 14px",borderRadius:"0 0 20px 20px",boxShadow:`0 8px 28px ${bookColor}44` }}>
         <div style={{ display:"flex",alignItems:"center",gap:10 }}>
           <button onClick={onBack} style={{ background:"rgba(255,255,255,.2)",border:"none",borderRadius:10,padding:"6px 9px",cursor:"pointer",color:"#fff",fontSize:16,lineHeight:1 }}>‹</button>
           <div style={{ flex:1,minWidth:0 }}>
@@ -577,8 +580,8 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
           </div>
           {/* Flag counter */}
           {myFlags>0&&(
-            <div style={{ background:"#EF4444",borderRadius:20,padding:"4px 9px",display:"flex",alignItems:"center",gap:4,cursor:"pointer" }} onClick={()=>setTab("expenses")}>
-              <span style={{ color:"#fff",fontSize:12,fontWeight:800 }}>❗{myFlags}</span>
+            <div style={{ background:"#EF4444",borderRadius:20,padding:"4px 9px",display:"flex",alignItems:"center",gap:4,cursor:"pointer" }} onClick={()=>{ setTab("expenses"); setTimeout(()=>{ const el=document.querySelector("[data-flagged='true']"); if(el) el.scrollIntoView({behavior:"smooth",block:"center"}); },300); }}>
+              <span style={{ color:"#fff",fontSize:12,fontWeight:800 }}>! {myFlags}</span>
             </div>
           )}
           <div onClick={onOpenSettings} style={{ display:"flex",alignItems:"center",gap:5,background:"rgba(255,255,255,.2)",borderRadius:20,padding:"4px 10px 4px 4px",cursor:"pointer" }}>
@@ -620,9 +623,10 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
               <div style={{ fontSize:11,color:"#64748B",marginBottom:4 }}>邀請連結</div>
               <div style={{ fontSize:11,color:bookColor,wordBreak:"break-all",marginBottom:8 }}>{inviteLink}</div>
               <button onClick={async()=>{
-              const shareText = `🎉 ${currentUser} 邀請你加入「${book?.name}」記帳本！\n點開連結，點選加入記帳本，輸入邀請碼就可以一起記帳分帳 👇\n${inviteLink}\n\n邀請碼：${book?.inviteCode}`;
+              const baseUrl = window.location.origin;
+              const shareText = `🎉 ${currentUser} 邀請你加入「${book?.name}」記帳本！\n點開連結，點選加入記帳本，輸入邀請碼就可以一起記帳分帳 👇\n${baseUrl}\n\n邀請碼：${book?.inviteCode}`;
               if(navigator.share){
-                try{ await navigator.share({ title:"加入記帳本 NOMO-1", text:shareText, url:inviteLink }); }
+                try{ await navigator.share({ title:"加入記帳本 NOMO-1", text:shareText, url:baseUrl }); }
                 catch(e){ await navigator.clipboard?.writeText(shareText); showToast("📋 已複製邀請訊息"); }
               } else {
                 await navigator.clipboard?.writeText(shareText);
@@ -685,6 +689,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
               )}
             </div>
 
+            <div onTouchStart={e=>{ window._expTouchX=e.touches[0].clientX; }} onTouchEnd={e=>{ const dx=e.changedTouches[0].clientX-(window._expTouchX||0); if(Math.abs(dx)>50){ const d=new Date(selDate+"T12:00"); d.setDate(d.getDate()+(dx<0?1:-1)); setSelDate(d.toISOString().slice(0,10)); setPage(1); } window._expTouchX=null; }} style={{ touchAction:"pan-y" }}>
             {dayExp.length===0&&<div style={{ textAlign:"center",color:"#94A3B8",padding:"28px 0",fontSize:13 }}>{selDate===todayStr()?"今日沒有支出":"這天沒有記錄"}</div>}
 
             {pagedExp.map(exp=>{
@@ -699,9 +704,9 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
               const hasFlag=flagCount>0;
               return (
                 <div key={exp.id} style={{ marginBottom:8 }}>
-                  <div style={{ background:"#fff",borderRadius:isEditing?"14px 14px 0 0":"14px",padding:"11px 12px",display:"flex",alignItems:"center",gap:9,cursor:"pointer",boxShadow:isEditing?`0 2px 10px ${bookColor}33`:hasFlag?"0 2px 8px rgba(239,68,68,.2)":"0 2px 8px rgba(37,99,235,.07)",outline:isEditing?`2px solid ${bookColor}`:hasFlag?"1.5px solid #FECACA":"none",outlineOffset:-1 }}
+                  <div data-flagged={hasFlag?"true":undefined} style={{ background:"#fff",borderRadius:isEditing?"14px 14px 0 0":"14px",padding:"11px 12px",display:"flex",alignItems:"center",gap:9,cursor:"pointer",boxShadow:isEditing?`0 2px 10px ${bookColor}33`:hasFlag?"0 2px 8px rgba(239,68,68,.2)":"0 2px 8px rgba(37,99,235,.07)",outline:isEditing?`2px solid ${bookColor}`:hasFlag?"1.5px solid #FECACA":"none",outlineOffset:-1 }}
                     onClick={()=>setInlineEdit(isEditing?null:exp)}>
-                    <div style={{ width:36,height:36,borderRadius:9,background:exp.category==="windfall"?"#F0FDF4":"#EFF6FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>{cat.emoji}</div>
+                    <div style={{ width:36,height:36,borderRadius:9,background:"#EFF6FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>{cat.emoji}</div>
                     <div style={{ flex:1,minWidth:0 }}>
                       <div style={{ fontWeight:700,fontSize:14,color:"#1E3A5F" }}>{exp.desc}
                         {hasFlag&&<span style={{ marginLeft:6,fontSize:11,color:"#EF4444",fontWeight:800 }}>❗{flagCount}</span>}
@@ -711,7 +716,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
                       <div style={{ fontSize:11,color:"#94A3B8",marginTop:2 }}>{exp.paidBy} 付 · {sw.join("、")}</div>
                     </div>
                     <div style={{ textAlign:"right",flexShrink:0 }}>
-                      <div style={{ fontWeight:800,fontSize:15,color:exp.category==="windfall"?"#16A34A":bookColor }}>{fmtAmt(exp.amount,exp.currency)}</div>
+                      <div style={{ fontWeight:800,fontSize:15,color:false?"#16A34A":bookColor }}>{fmtAmt(exp.amount,exp.currency)}</div>
                       <div style={{ fontSize:10,color:"#94A3B8" }}>每人 NT${Math.floor(perTWD).toLocaleString()}</div>
                     </div>
                     {/* Action button: X for own, ! for others */}
@@ -733,6 +738,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
               );
             })}
 
+            </div>
             {totPages>1&&(
               <div style={{ display:"flex",justifyContent:"center",gap:6,marginTop:8 }}>
                 {Array.from({length:totPages},(_,i)=>(
@@ -793,7 +799,6 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
                 : settlements.map((s,i)=>{
                   const payer=members.find(m=>m.name===s.from);
                   const app=payer?.paymentApp?PAYMENT_APPS.find(a=>a.id===payer.paymentApp):null;
-                  const url=payer?.paymentApp==="custom"?payer.paymentCustomUrl:app?.url;
                   const label=payer?.paymentApp==="custom"?(payer.paymentCustomLabel||"自訂"):app?.label;
                   const emoji=payer?.paymentApp==="custom"?"✏️":app?.emoji;
                   const isMe=s.from===currentUser;
@@ -842,7 +847,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
                       {m.nickname||m.name}
                       {m.name===currentUser&&<span style={{ fontSize:10,color:bookColor,marginLeft:5 }}>（我）</span>}
                       {m.name===book?.ownerId&&<span style={{ fontSize:10,background:"#FEF9C3",color:"#A16207",borderRadius:6,padding:"1px 5px",marginLeft:5,fontWeight:700 }}>創辦人</span>}
-                      {m.hasPlusOne&&<span style={{ fontSize:12,marginLeft:5 }}>🫥</span>}
+                      {m.hasPlusOne&&<span style={{ fontSize:10,color:"#94A3B8",marginLeft:5,fontWeight:700 }}>+1</span>}
                     </div>
                     <div style={{ fontSize:10,color:"#94A3B8",marginTop:1 }}>已付 NT${Math.round(paid).toLocaleString()} · {appInfo?`${appInfo.emoji} ${appInfo.label}`:"未設定付款方式"}</div>
                   </div>
@@ -1021,7 +1026,7 @@ function JoinScreen({ bookId, currentUser, onDone }) {
   },[bookId]);
 
   const verifyCode = () => {
-    if(code.trim().toUpperCase()===book?.inviteCode){ setCodeErr(""); setStep("name"); }
+    if((code.trim().toUpperCase())===(book?.inviteCode||"").toUpperCase()){ setCodeErr(""); setStep("name"); }
     else setCodeErr("邀請碼不正確");
   };
 
@@ -1129,6 +1134,7 @@ function JoinScreen({ bookId, currentUser, onDone }) {
 function HomeScreen({ currentUser, onEnterBook }) {
   const [books,    setBooks]    = useState([]);
   const [loading,  setLoading]  = useState(true);
+  const [bookNicknames, setBookNicknames] = useState({});
   const [showNew,  setShowNew]  = useState(false);
   const [newName,  setNewName]  = useState("");
   const [newColor, setNewColor] = useState("#2563EB");
@@ -1156,6 +1162,14 @@ function HomeScreen({ currentUser, onEnterBook }) {
         }
       }
       setBooks(myBooks);
+      // Fetch nickname for currentUser in each book
+      const nicks = {};
+      for(const b of myBooks){
+        const mSnap2 = await getDocs(collection(db,"books",b.id,"members"));
+        const me = mSnap2.docs.find(d=>d.data().name===currentUser);
+        if(me && me.data().nickname && me.data().nickname!==currentUser) nicks[b.id]=me.data().nickname;
+      }
+      setBookNicknames(nicks);
       setLoading(false);
     });
     return u;
@@ -1167,7 +1181,7 @@ function HomeScreen({ currentUser, onEnterBook }) {
     try {
       // Search all books for matching inviteCode
       const allBooks = await getDocs(query(collection(db,"books")));
-      const match = allBooks.docs.find(d=>d.data().inviteCode===joinCode.trim().toUpperCase());
+      const match = allBooks.docs.find(d=>(d.data().inviteCode||"").toUpperCase()===(joinCode.trim().toUpperCase()));
       if(!match){ setJoinCodeErr("找不到此邀請碼，請確認後再試"); setJoiningBook(false); return; }
       const bookId = match.id;
       // Add user as member if not already
@@ -1208,20 +1222,28 @@ function HomeScreen({ currentUser, onEnterBook }) {
 
   if(loading) return <Spinner fullscreen/>;
   const active=books.filter(b=>!b.archived), archived=books.filter(b=>b.archived);
+  const hasNoActive = active.length===0 && !loading;
 
   return (
     <div style={{ minHeight:"100vh",background:"linear-gradient(160deg,#EFF6FF 0%,#F0F7FF 100%)",fontFamily:"'Noto Sans TC',sans-serif",display:"flex",flexDirection:"column",alignItems:"center",padding:"40px 16px 80px" }}>
-      <div style={{ fontSize:44,marginBottom:8 }}>💳</div>
-      <div style={{ fontWeight:800,fontSize:16,color:"#2563EB",marginBottom:2,letterSpacing:4,textAlign:"center" }}>NOMO</div>
+      <div style={{ marginBottom:8,height:44,display:"flex",alignItems:"center",justifyContent:"center" }}><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAjYAAAFACAYAAACvJTZ0AAATXElEQVR4nO3dXXbbOBIGULlPb8FLyMqyLq/MS8giMg8ZdWRZokjir1C492WmkxObAkHgUwEkLxcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIKK30QcAwHx+/Pz1+/r/Pz/ezSWEoTMCsNttoLkn4BDBP6MPAIA5CDXMQLAB4CWhhlkINgBs2go1EI2UDcBDewKNag3RqNgA8I1Qw6wEGwC+EGqYmWADwH+EGmancwKwe4OwUEN0KjYAixNqyEQnBVjUkdu4hRpmoWIDwCahhpkINgCL+fHz1+/7as2z8CLUMJt/Rx8AAH08W3oSatjyqN98fry//fj56/f1f69/1v/ovgtxEAC0ZT8NR5W+SmNUP9J5ISh3qlDL0QlKn1rXfRWmht79yR4bCObogPJovwSc8fnx/ibUrOs6jlzDTe2f24sODEHUuvhNTFxZfmJL78DRq4/pyDBYi8HFJIVQwyOjq7s9+pqlKBho9CBDPkeXJoWadUQYb3ocg9u9obMIgws56VvcWrU/SOrQUdY1bcZz5xNXMwSalv1PxQY6qH3r5AwDF/0INRgT/tK5oZHWz4HY8/NNYLmd6WP6RC4zB5pWfVEHhwZqDDZ7Lvqt32MCy02oWVvPQHPtN3tenRBh47pODg30fBT5q99lMsvlbN/SD3IYEWiOGh1u7LGBika8W8WeG7YINPObIczc/4yRY5Ln2EAlUV8YJ/TkcPt8mr19RaiZ32yhZu/PclcUBFYy8Jh42OO+j+15UaG+Nb/WoSZCH6n9XqrLRcUGipTsd4gwqBDbVv8SanK6VuZahZpr3xjVR45sRD5LsIETSgae1gOKSS2H2zctH/l3zv+cerwKo2eoefZZvFIBkhk5oDCPqKGZNs6c7+jPsRq5gViwgQOi7qcZfRcCdUTtX9R1uwzTeslpRYIN7BD1jifyEGrye7QJvPbvmK0vtNg8LNjABoGGHoSa3HpVU/WFPwQbaMQgwx720+TWI9RE7QujlsgFG3ggW6WmRbmXcmfueLKXKr7W19ss17LNwxCEZYG5zBjazvaxls/+oNztebUpeBzBBm7MHGpW+Da/9WyM0e3fwwqfcVYrLzk9MnIsmqaRoLXZ9zpkect3rQEx6uedvZ/x155XW9Qw67kf9awdFRu45JpsZq3c1D7maMs2M1cD+e7sk6G33F67s5/zR+3Sa2wSbFhapkBz9WxAGXEsW26Ps+XxRVimytjPVtZycs58znt94UrbgPBKtslmlqWokdWk3m2QrY+tzHLTMXvby1IUVJJxwom+BBXh2HpWbzL2sRUJNPMRbFhK5skmQnB4ZO8GwlZ7FR4dT+vzmbmfUYdz3Y6GZRnZJ5toS1FRg9ZVq/bI3s9WYA9NmSPtZykKTlphsomyFNX6wWSP7ho58ztbVG5W6GeZtarmOb99CTakZ7Lpo/ZS0pG/Kw05Ndz/3j1BUx+Lo9Xt27V+1mxGftFattFZw0qhZuuzRt1Tcq/WcfYuhZ/5/DP2sYxq991ejzGIbPRS1D+1fyCwlogPFOt5LELNvFoumzrH42h40lpxwuldtYlWqbnX+pHuK1UEs2kRapzXP0a9SuHKSSAloeb7GnfNz1fj9QC9ninTapA92gaz968sBJr2Rj6c73KxeZhkVv4GfR9kWpXZo1dpWopw1xnHuX27n9Gh5nKxx4ZEVg41r4zYlPvoGEa09au7qC6XfZ/LSyzn1KpCYx9NXCo2pCDUbKux7JOpjY9+lkyffSW1Q43zuS1KRVOwYXp7nhXyaP9J26PKI8OkXvJMjSiDNccINesSbJjamSUEA9Q+GQLNEY+qWpaf5mEfDVf22DClHz9//fZN+qta7VESaLJPAHs/X/Z2iMZYMJfW14eKDUvJPOHUfIT5qrcyX6s2W28G3/r3WdphFq02Bkd86GR0kcKlk8ZUVlseOaJk0l1lyaXlRDhTO2TgeTSxjH6Nwi1LUUxDqIllxqWnVsc7WzvwnXOYh6UopiDUnFeytPLs55UfFZxz5AFwox/tv4pI1ZrLRbBhAibfMjVDzcrul5wsP/Vzpq/e7pN59O+du7wsRRGaULPf3s+9dUfZ1s+Ycemppmub2VjaT6u7H5273FRsCOvRCxzdlXJeyWsDtCs91QwznmMVR6+2F2wI6X4wslb+mm+2dXli9Rj3X2hq9mvnbw2CDSkYsOrK2p42ocf16Nys8hiCmUXcqyfYEIo9NURhL00/3us0p2h3Q10JNoQQMfVn92jfUtYJQaUmLqFmXrWXCmsRbBhOuXmc7KFG34rLnrD5RQw1l4tgw2AmnnGyL7VEHXQ5voThbsi59T4/nmPDMCXrswayOrK2Y41QIxjV1+K5NFn7cCa9ryUVG6bhZYOP2XD9lUAST8k58WylmKJuHL5cVGwY5OhAl33ZpMTRNsnchp55Ek+LCo1zwxYVG7pTYagr8jennlRqYrE5mFEEG7oSaurQjl8JNbEINVyNOG+CDd2YjGmhVaixn+scy4GMJtjQhVBTh8rEVyX9SlvWVas93SRAKcGG5oSadqI++bM1fSoOy07riT7muCuKpkxA9Rx5SWDmNtSnYvBMGqISbGjGBFRHjQkkS7vW7FPXP3/193xX+4nhbuHOadQ5FWwIw8BWz/3EE710vMejz1Cjz2Rom55K20t705pgQxMGrzq04x/P2qFl+7RYapmd/TTMcE3YPEx1lqDKHW3DzJuIvSg1hrPn4b5vOie0JthQTcnAV/tYVnK7VyRbuOnZpzK2Xw2WnpiNYAPB7J0I7ifvbBNI76Ccrf1q8LA9zhp5vnU0qrD8VMfZULPn387S3hEDzSxtV0utZafbPy8/KkYrGZ96UrGhuUeD3eiOH40XWf4xKtRYhvqj9rJT5r5KXIINxV4Nhga7bULN+P1ZQk19Wfvqqma6RgQbipy5e6fVsTCnkaFmb6Um87uLPD2YbDzHhlPOPOPDgPfdkf0dGdtvpm+BGQk17DHbdSrYcMrRAcyA993ewWJvtWC2No7yfJrZ2q2W2SYrxptlHBJsOORMlSZCR49mxL6aSBNZlFCzolYvr3Recrsu285wnu2xYbfrYBhpgpzR6puFR28UXpmlJ0pt9aEo/UGwgY5WDjXRqzTX37H1XqqZz4mH7VFipi+0gg27zNSpI+q10Trq81hmCDUR262UMEOpGa8Le2zYVLIebyD8o+fdY0efKdRaaf/p2Ye2fterak5EMx0rcc04jqvYUN2MF0IE2dotepXmiJlCQotjjXY+6Gemvn+ls/KU9z+Vi3r3U8vzNGugybD/ydITtc3yfqhblqKgkSMDQu/nsrT4FlZ6G/HogXH07y9R+xbumdsCBBse8ryaMjOUb2se4wyft6Yon7fVM2lq/jzozR4bvvGqhH5mb7vSSTXa55/p7qjbN5Pf/vdZ0c4F481yLdzTkfnCvppyUdakW+8ZmXnZ6ZXR+5ReUaWhhyhj2VEqNvxHpaZcxIFgTxXi9u9fVQBKqhqZ+syIB/YJNPQ2UxXzSqfmcrkINTVEDDWXS6xy8iz9JtIdUm7fZrQZXqNwy+ZhDovYkUd7Nflc22xE2z36nVGOI6r7Y9069hYbeG9/du2fOdN5YJxrv470xWgvS1GE+kY/o6iVmihm/dy3Jfg957jm0pRAA+cJNhxicPzqfgK6bZ9IgfF+30yPY1uxr2z1hyP/rqYVzwNr0+EXF2kvwWxmrNT0CluRPnOpWm123ybCJVHNOLbdCnlQtGezcJnZL3x31xzTOoTUvvMk+/mgrdnHN0tRCxJqysx+0V8u35emzk6skT/jTFpVhWBFLoLFmLzKZAg1j7y6nfP+KbcrirRn6pGVzw31ZBjjVGwWItTwzKvzrB/EfFCZ8wLfeY7NIoSachm+yVAm0rmNdCzkkaFfCTY8lKFz1yTUcDX6HH9+vL+NPgbyilaVPEOwWUCGjjoDk806joaLWn1DH6OlLHOFi2QB7oIqE/1Nz4zV41bwlj8frrJUpkMfHOWEmjJCDXt5Dg2zyzLeuSsqsSxlxVGyXOT0cf86jaN3UelLUIdgk5RKDYwz8m3ucEamL8I2Dyck1JRTrQGYk2CTTKbUPYpQA/DdLOOeYAMHzXJxA+yR7QuxYJPImSUok/RXz9rQnglgZTONfYJNEvbVlNtqw+tdLj2PB4Dj3BWVgFBTJlsZFmBlKjaTMyn3IQwCq5pt/BNsJuaN3eXcAQWsLOOXY8FmISbor4QagHzssZmUR7WXEWoAclKxmVDG0mFP2g8g7xc8wSa5GTtlBNoNYE6CzWQsQZXJ+g0FgD8Em4kINWWEGoD8BBv4P6EGWEXmL3qCzSRseC3zqv1mvYAB+Mrt3hOwBAVATzPPJSo2wanUlFOtAfgr+7xiQA/Myy3r2GpHbQas7n6MnH1cVLFJYvaO2Er2byYAZ2QeG02GQanWlLMEBfBd9iq2ik1AQk05oQbgu8yVmit3RQUj1JR71obaCuC5LGOkik0wRzpWlk5Y01YwXOGbCsDqBJtgTL7tCILAylaZXyxFBeEhfOVWuWgBeE7FZjJCzT637fT58f6m3YCVrXRDhWATgEpDuds2zHSBAtRwPy5mHicFm8G27uDJ3PFaEhQBvlppXBRsJiLo7LfSRQxwVOYqt83DA7k1uY7sT9EEYD/BZhAP4qvDw/gAtq32RdlS1ABCTR2rXawAtWWcXwSb4DJ2uhosPwHwiGATmAkaAI4RbDrbu3wi1Jyj3QD+WrG6Ldh0JNTUYcMwAM8INp3Y6FqHdgRgi2BDGkIPwF8rLkNdLp5j04U3d9dhCQqAV1RsAjFBn6NSA7Bf9rlGsGnMhuH2tB3APiuMl4JNQyoJ9ViGAthv5flHsGnEvhoA6E+wGUyoOU/bATy36hgp2DRgX019922l7QC2rbocZXKoTKgBYKTV9ySq2AAAaQg2FanWABDRSvOOYFOJUANABKvPM16pUMGqG7QAiOXRfLRa0FGx6Wi1zgUAvQk2hfbuPhdqAOhtxblHsCmwtQRleQqAnsw7fwg2J3llAgCRrTr3CDaFXnWcVTsWAOOsPPe4K+qEPdWalTsVAGOYe1RsilnTBIA4BJuDBBkAIlKt+UOwOcDThQEgNsEGAEhDsCmgMgMAsZiYd7IMBQDxqdjsINQAwBwEmxeEGgCYh2ADAKQh2GxQrQGAuQg2Twg1ADAfwaaAUAMAsQg2D3jJJQDMSbC5411QADAvwQYASEOwOcEyFADEJNjcsLcGAOYm2PyfvTUAMD/B5uKZNQCQxfLBRqUGAPJYPthcXasxz6oyqjUAEN/Sk7UlqDFetbv2Bnjtx89fv42X3y3bIEJNXyVLfs4BsKqjY6fx0lLUJh2kjtJ9TPZBAav58fPX7zNjn/Fy0WDjxPdTq62dM2AVNb4MrjxmLhls7n1+vL/dV2dUa8rVvrBWvlCBNdQc51YdM5ebvG83Wz076UJNuZYXlPMDZNRq3FxtzPx39AGMsGqKBSAm81I9Sy9FWYKakwEAYL/Vxsylgs39yV19g9XMnDeA/VYaM5cJNiud1NG0NQCjLBNs9rAMBQBzWyLY7KkgCDUAjKDKXVf6YCPUAMA6UgcbKRgA1pI62OyhWlNf6zZ1zoBMeo1pq3zZTxtsVjmBEd0+3bk2oQbgmNXGzbQf1t6acXqESucOyKL1mLnaeJmyYiPUjKVtAeJY7WG06YLNSicvKucAYD9fButKF2z20InauravfTYA+7Uc21YaN5cMNrT3+fH+pnIDsJ8xs45Uwcbemli0NcA+qjX1pAo2r6x2ciOo3ebOIZCV8a2ONMFGCS8/Fz2Q3efH+1vNsW7FcTNFsBFqYiu9sGpf6AArWHXcTBFsiO9sOFn1wgTWVjL2rf5lcPoPvrdas/JJjshGb4B9jqxKGDcXCTZONAAZtXw336zSL0U54QBkZY77bupgY9MwAHBr6mDzKqlKsgCwln9HH8AZKjUAwCNTV2y2qNYAwHpSBhuhBgDWNF2webUMJdQAwLqm2WNjXw0A8Mp0FZstqjUAsLZpgo1buwGAV6ZYirIMBQDsEb5i411QAMBe4YMNAMBeoYPNo2rN58f7222FRrUGALgKGwr27qsRbACAq9AVm1eEGgDg1rTBRqgBAO6FDDZu7wYAzggZbF5RrQEAHgkXbLzkEgA4a4onD18uAg0A8Fqois1Wtca+GwDglVDBBgCgRJhgY28NAFAqRLCxzAQA1BAi2LyiWgMA7DE82FiCAgBqGR5sAABqGRpsVGsAgJqGBZtnoebz4/1NoAEAzgi3FHUNPMINAHDUkGDj9m4AoIVwFRsAgLO6BxsbhgGAVlRsAIA0ugYb1RoAoKUwFRuhBgAo1S3Y/Pj56/ez8CLUAAA1hKnYAACU6hJsrntrPL8GAGhpeMXGMhQAUEvzYKNKAwD08u+oX6xSAwDU1rRio1oDAPQ0fI8NAEAtzYLNVrXGMhQA0EL3io1QAwC00iTY2FsDAIzQtWKjWgMAtFQ92Dyr1gg1AEBr7ooCANKoHmweVWZUawCAad0uR9lIDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGv7H8YSlt28gbrlAAAAAElFTkSuQmCC" alt="" style={{ width:56,height:32,objectFit:"contain",filter:"brightness(0) invert(1)",opacity:.9 }}/></div>
+      <div style={{ fontWeight:900,fontSize:18,color:"#2563EB",marginBottom:2,letterSpacing:5,textAlign:"center",fontStyle:"italic" }}>NOMO</div>
       <div style={{ fontWeight:800,fontSize:24,color:"#1E3A5F",marginBottom:4,textAlign:"center" }}>Money Check²</div>
       <div style={{ fontSize:13,color:"#64748B",marginBottom:28 }}>嗨，{currentUser}！選擇或建立記帳本</div>
       <div style={{ width:"100%",maxWidth:400 }}>
+        {hasNoActive&&!showNew&&!showJoinBook&&(
+          <div style={{ textAlign:"center",color:"#94A3B8",padding:"32px 16px",background:"#fff",borderRadius:16,marginBottom:12 }}>
+            <div style={{ fontSize:36,marginBottom:8 }}>📭</div>
+            <div style={{ fontSize:14,fontWeight:700 }}>目前沒有可使用的記帳本</div>
+            <div style={{ fontSize:12,marginTop:4 }}>建立新記帳本，或輸入邀請碼加入</div>
+          </div>
+        )}
         {active.map(b=>(
           <button key={b.id} onClick={()=>{ localStorage.setItem("splitpay_book",b.id); onEnterBook(b.id); }} style={{ display:"flex",alignItems:"center",gap:12,width:"100%",border:"none",background:"#fff",borderRadius:16,padding:"14px 16px",marginBottom:10,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 12px rgba(37,99,235,.09)" }}>
             <div style={{ width:44,height:44,borderRadius:12,background:b.color||"#2563EB",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>{b.emoji||"💳"}</div>
             <div style={{ flex:1,textAlign:"left" }}>
               <div style={{ fontWeight:800,fontSize:15,color:"#1E3A5F" }}>{b.name}</div>
-              <div style={{ fontSize:11,color:"#94A3B8",marginTop:1 }}>{b.ownerId===currentUser?"你建立的":"成員"} · 邀請碼 {b.inviteCode||"—"}</div>
+              <div style={{ fontSize:11,color:"#94A3B8",marginTop:1 }}>{b.ownerId===currentUser?"你建立的":"成員"}{bookNicknames[b.id]&&<span style={{color:"#2563EB"}}> · 暱稱：{bookNicknames[b.id]}</span>} · 邀請碼 {b.inviteCode||"—"}</div>
             </div>
             <div style={{ color:"#CBD5E1",fontSize:18 }}>›</div>
           </button>
@@ -1237,9 +1259,9 @@ function HomeScreen({ currentUser, onEnterBook }) {
         {showJoinBook ? (
           <div style={{ background:"#fff",borderRadius:16,padding:18,marginTop:8,boxShadow:"0 2px 12px rgba(37,99,235,.09)" }}>
             <div style={{ fontWeight:800,fontSize:15,color:"#1E3A5F",marginBottom:4 }}>加入記帳本</div>
-            <div style={{ fontSize:12,color:"#94A3B8",marginBottom:12 }}>輸入朋友給你的邀請碼</div>
-            <input placeholder="邀請碼（例：SZCFEO）" value={joinCode}
-              onChange={e=>{ setJoinCode(e.target.value.toUpperCase()); setJoinCodeErr(""); }}
+            <div style={{ fontSize:12,color:"#94A3B8",marginBottom:12 }}>輸入朋友給你的邀請碼 <span style={{color:"#2563EB",fontSize:11}}>(不分大小寫)</span></div>
+            <input placeholder="邀請碼（例：szcfeo）" value={joinCode} inputMode="text"
+              onChange={e=>{ setJoinCode(e.target.value); setJoinCodeErr(""); }}
               onKeyDown={e=>e.key==="Enter"&&joinExistingBook()}
               style={{ ...fld,marginBottom:8,textAlign:"center",fontSize:20,letterSpacing:4,fontWeight:800 }} autoFocus/>
             {joinCodeErr&&<div style={{ color:"#DC2626",fontSize:12,marginBottom:8,textAlign:"center" }}>❌ {joinCodeErr}</div>}
@@ -1397,9 +1419,9 @@ export default function App() {
     return u;
   },[activeBookId]);
 
+  const [autoOpenJoin, setAutoOpenJoin] = useState(false);
   const handleLogin = name => {
     setCurrentUser(name);
-    // If there was a pending join from invite link
     const pj = localStorage.getItem("splitpay_pending_join");
     if(pj){ localStorage.removeItem("splitpay_pending_join"); window.location.search = "?join="+pj; }
   };

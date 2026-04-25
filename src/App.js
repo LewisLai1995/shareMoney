@@ -1402,19 +1402,3 @@ const arrowBtn = { background:"none",border:"none",cursor:"pointer",color:"#94A3
 const pgBtn = { background:"#EFF6FF",border:"none",borderRadius:7,width:26,height:26,cursor:"pointer",color:"#2563EB",fontSize:15,fontWeight:700,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center" };
 
 // ── useThemeColor: syncs status bar + body bg to book color ───────────────────
-function useThemeColor(color) {
-  useEffect(()=>{
-    const c = color||"#2563EB";
-    // Update <meta name="theme-color">
-    let meta = document.querySelector('meta[name="theme-color"]');
-    if(!meta){ meta=document.createElement("meta"); meta.name="theme-color"; document.head.appendChild(meta); }
-    meta.content = c;
-    // Update body background so top/bottom overscroll areas match
-    document.body.style.background = c;
-    document.documentElement.style.background = c;
-    return ()=>{
-      document.body.style.background = "#1D4ED8";
-      document.documentElement.style.background = "#1D4ED8";
-    };
-  },[color]);
-}

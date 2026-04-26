@@ -81,7 +81,7 @@ let offset = 0;
 const slices = data.filter(d=>d.value>0).map(d=>{
 const pct = d.value / total;
 const dash = pct * circ;
-const slice = { …d, offset, dash, pct };
+const slice = { ...d, offset, dash, pct };
 offset += dash;
 return slice;
 });
@@ -108,7 +108,7 @@ if(!fullscreen) return <div style={{ display:"flex",justifyContent:"center",padd
 return (
 <div style={{ minHeight:"100vh",background:"linear-gradient(135deg,#1D4ED8,#3B82F6)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"‘Noto Sans TC’,sans-serif" }}>
 <div style={{ fontSize:48,marginBottom:20 }}>💳</div>{el}
-<div style={{ color:"rgba(255,255,255,.7)",marginTop:12,fontSize:14 }}>連線中…</div>
+<div style={{ color:"rgba(255,255,255,.7)",marginTop:12,fontSize:14 }}>連線中...</div>
 </div>
 );
 }
@@ -207,13 +207,13 @@ return (
 
 // ── ExpenseForm ────────────────────────────────────────────────────────────────
 function ExpenseForm({ members, initialData, onSave, onCancel, saveLabel="確認新增", loading, bookColor="#2563EB" }) {
-const init = { desc:"",amount:"",currency:"TWD",paidBy:members[0]?.name||"",category:CATEGORIES[0].id,splitWith:members.map(m=>m.name),plusOnes:{},date:todayStr(),…(initialData||{}) };
+const init = { desc:"",amount:"",currency:"TWD",paidBy:members[0]?.name||"",category:CATEGORIES[0].id,splitWith:members.map(m=>m.name),plusOnes:{},date:todayStr(),...(initialData||{}) };
 const [form,setForm] = useState(init);
 const [errors,setErrors] = useState({});
 const [shake,setShake]   = useState(false);
-const set = (k,v) => setForm(p=>({…p,[k]:v}));
-const toggleSplit = n => set("splitWith",form.splitWith.includes(n)?form.splitWith.filter(x=>x!==n):[…form.splitWith,n]);
-const togglePO    = n => { const po={…form.plusOnes}; po[n]?delete po[n]:(po[n]=true); set("plusOnes",po); };
+const set = (k,v) => setForm(p=>({...p,[k]:v}));
+const toggleSplit = n => set("splitWith",form.splitWith.includes(n)?form.splitWith.filter(x=>x!==n):[...form.splitWith,n]);
+const togglePO    = n => { const po={...form.plusOnes}; po[n]?delete po[n]:(po[n]=true); set("plusOnes",po); };
 const sc     = form.splitWith.reduce((s,n)=>s+1+(form.plusOnes[n]?1:0),0);
 const twdAmt = form.amount?toTWD(parseFloat(form.amount)||0,form.currency):0;
 const perTWD = sc>0&&twdAmt?twdAmt/sc:0;
@@ -233,13 +233,13 @@ return e;
 const handleSave = () => {
 const e=validate();
 if(Object.keys(e).length){ setErrors(e); setShake(true); setTimeout(()=>setShake(false),500); return; }
-setErrors({}); onSave({…form,amount:parseFloat(form.amount),id:form.id||Date.now()});
+setErrors({}); onSave({...form,amount:parseFloat(form.amount),id:form.id||Date.now()});
 };
 
 const inputStyle = (field) => ({
-…fld,
-…(errors[field]?{ borderColor:"#EF4444",background:"#FFF5F5" }:{}),
-…(shake&&errors[field]?{ animation:"shake .4s ease" }:{})
+...fld,
+...(errors[field]?{ borderColor:"#EF4444",background:"#FFF5F5" }:{}),
+...(shake&&errors[field]?{ animation:"shake .4s ease" }:{})
 });
 
 return (
@@ -256,19 +256,19 @@ style={{ width:"100%",padding:"8px 10px",border:"none",fontSize:14,fontFamily:"i
 </div>
 <div style={{ marginBottom:8 }}>
 <div style={lbl}>📝 品項</div>
-<input placeholder="說明" value={form.desc} onChange={e=>{ set("desc",e.target.value); setErrors(p=>({…p,desc:false})); }}
+<input placeholder="說明" value={form.desc} onChange={e=>{ set("desc",e.target.value); setErrors(p=>({...p,desc:false})); }}
 style={inputStyle("desc")}/>
 </div>
 <div>
 <div style={lbl}>💵 金額</div>
 <div style={{ display:"flex",gap:4 }}>
 <select value={form.currency} onChange={e=>set("currency",e.target.value)}
-style={{ …fld,width:64,flex:"none",padding:"8px 4px",minWidth:0 }}>
+style={{ ...fld,width:64,flex:"none",padding:"8px 4px",minWidth:0 }}>
 {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.code}</option>)}
 </select>
 <input type="number" placeholder="0" value={form.amount}
-onChange={e=>{ set("amount",e.target.value); setErrors(p=>({…p,amount:false})); }}
-style={{ …inputStyle("amount"),flex:1,minWidth:0 }}/>
+onChange={e=>{ set("amount",e.target.value); setErrors(p=>({...p,amount:false})); }}
+style={{ ...inputStyle("amount"),flex:1,minWidth:0 }}/>
 </div>
 {form.currency!=="TWD"&&form.amount&&<div style={{ fontSize:10,color:bookColor,fontWeight:600,marginTop:3 }}>≈ NT${Math.round(twdAmt).toLocaleString()}</div>}
 </div>
@@ -325,9 +325,9 @@ return (
 </div>
 {/* Footer */}
 <div style={{ display:"flex",gap:8,padding:"10px 12px",borderTop:"1px solid #EFF6FF" }}>
-{onCancel&&<button onClick={onCancel} style={{ …actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>取消</button>}
-<button onClick={handleSave} disabled={loading} style={{ …actionBtn,background:saveBg,color:"#fff",flex:2,opacity:loading?.6:1 }}>
-{loading?"處理中…":`${isWF?"🍀 ":""}${saveLabel}`}
+{onCancel&&<button onClick={onCancel} style={{ ...actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>取消</button>}
+<button onClick={handleSave} disabled={loading} style={{ ...actionBtn,background:saveBg,color:"#fff",flex:2,opacity:loading?.6:1 }}>
+{loading?"處理中...":`${isWF?"🍀 ":""}${saveLabel}`}
 </button>
 </div>
 </div>
@@ -343,8 +343,8 @@ return (
 <div style={{ fontWeight:800,fontSize:16,color:"#1E3A5F",marginBottom:6 }}>{msg}</div>
 {sub&&<div style={{ fontSize:13,color:"#64748B",marginBottom:4 }}>{sub}</div>}
 <div style={{ display:"flex",gap:10,marginTop:18 }}>
-<button onClick={onCancel}  style={{ …actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>取消</button>
-<button onClick={onConfirm} style={{ …actionBtn,background:confirmColor,color:"#fff",flex:1 }}>{confirmLabel}</button>
+<button onClick={onCancel}  style={{ ...actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>取消</button>
+<button onClick={onConfirm} style={{ ...actionBtn,background:confirmColor,color:"#fff",flex:1 }}>{confirmLabel}</button>
 </div>
 </div>
 </Modal>
@@ -398,8 +398,8 @@ return (
 {/* winner here is the display name passed in, which is correct */}
 {!winner&&<div style={{ fontSize:13,color:"#64748B",marginBottom:12 }}>點轉盤開始</div>}
 <button onClick={winner?()=>onDone(winner):spin} disabled={spinning}
-style={{ …actionBtn,background:winner?"#16A34A":"#2563EB",color:"#fff",width:"100%",opacity:spinning?.6:1 }}>
-{spinning?"轉動中…":winner?"確認":"開始轉！"}
+style={{ ...actionBtn,background:winner?"#16A34A":"#2563EB",color:"#fff",width:"100%",opacity:spinning?.6:1 }}>
+{spinning?"轉動中...":winner?"確認":"開始轉！"}
 </button>
 </div>
 </Modal>
@@ -436,9 +436,9 @@ const showToast = msg => { setToast(msg); setTimeout(()=>setToast(null),2400); }
 useEffect(()=>{ setPage(1); },[selDate]);
 
 useEffect(()=>{
-const u1=onSnapshot(doc(db,"books",bookId),snap=>{ if(snap.exists()) setBook({id:snap.id,…snap.data()}); setFbReady(true); });
-const u2=onSnapshot(query(collection(db,"books",bookId,"members"),orderBy("createdAt","asc")),snap=>setMembers(snap.docs.map(d=>({id:d.id,…d.data()}))));
-const u3=onSnapshot(query(collection(db,"books",bookId,"expenses"),orderBy("createdAt","asc")),snap=>setExpenses(snap.docs.map(d=>({id:d.id,…d.data()}))));
+const u1=onSnapshot(doc(db,"books",bookId),snap=>{ if(snap.exists()) setBook({id:snap.id,...snap.data()}); setFbReady(true); });
+const u2=onSnapshot(query(collection(db,"books",bookId,"members"),orderBy("createdAt","asc")),snap=>setMembers(snap.docs.map(d=>({id:d.id,...d.data()}))));
+const u3=onSnapshot(query(collection(db,"books",bookId,"expenses"),orderBy("createdAt","asc")),snap=>setExpenses(snap.docs.map(d=>({id:d.id,...d.data()}))));
 return ()=>{ u1();u2();u3(); };
 },[bookId]);
 
@@ -476,8 +476,8 @@ if(Math.abs(cArr[ci].val)<0.5) ci++;
 const dayExp   = expenses.filter(e=>e.date===selDate).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
 const totPages = Math.max(1,Math.ceil(dayExp.length/PER_PAGE));
 const pagedExp = dayExp.slice((page-1)*PER_PAGE,page*PER_PAGE);
-const datesWithData = […new Set(expenses.map(e=>e.date))];
-const datesFlagged  = […new Set(expenses.filter(e=>Object.keys(e.flags||{}).length>0).map(e=>e.date))];
+const datesWithData = [...new Set(expenses.map(e=>e.date))];
+const datesFlagged  = [...new Set(expenses.filter(e=>Object.keys(e.flags||{}).length>0).map(e=>e.date))];
 const totalTWD = expenses.reduce((s,e)=>s+toTWD(e.amount,e.currency),0);
 const getCat   = id=>CATEGORIES.find(c=>c.id===id)||CATEGORIES[CATEGORIES.length-1];
 const bookColor= book?.color||"#2563EB";
@@ -492,7 +492,7 @@ const myFlags = expenses.filter(e=>Object.keys(e.flags||{}).length>0).length;
 
 // Category totals for chart
 const catTotals = CATEGORIES.map(cat=>({
-…cat,
+...cat,
 value: expenses.filter(e=>e.category===cat.id).reduce((s,e)=>s+toTWD(e.amount,e.currency),0)
 })).filter(c=>c.value>0);
 
@@ -514,8 +514,8 @@ if(isArchived){ showToast("⚠️ 此記帳本已封存，無法新增"); return
 if(!members.find(m=>m.name===currentUser)){ showToast("⚠️ 你不是此記帳本的成員"); return; }
 setSaving(true);
 try {
-const { id, …rest } = data;
-const payload = { …rest, plusOnes:rest.plusOnes||{}, splitWith:rest.splitWith||[], createdBy:currentUser, flags:{} };
+const { id, ...rest } = data;
+const payload = { ...rest, plusOnes:rest.plusOnes||{}, splitWith:rest.splitWith||[], createdBy:currentUser, flags:{} };
 // Check if needs rounding spinner
 const sw=rest.splitWith||[], po=rest.plusOnes||{};
 const sc=sw.reduce((s,n)=>s+1+(po[n]?1:0),0);
@@ -555,7 +555,7 @@ catch(e){ showToast("❌ 刪除失敗"); }
 const flagExpense = async (expId, note) => {
 const exp = expenses.find(e=>e.id===expId);
 if(!exp) return;
-const flags = { …(exp.flags||{}), [currentUser]: note||"有疑問" };
+const flags = { ...(exp.flags||{}), [currentUser]: note||"有疑問" };
 await updateDoc(doc(db,"books",bookId,"expenses",expId),{ flags });
 setFlagging(null); setFlagNote(""); showToast("❗ 已標記疑問");
 };
@@ -563,7 +563,7 @@ setFlagging(null); setFlagNote(""); showToast("❗ 已標記疑問");
 const unflagExpense = async (expId) => {
 const exp = expenses.find(e=>e.id===expId);
 if(!exp) return;
-const flags = { …(exp.flags||{}) };
+const flags = { ...(exp.flags||{}) };
 delete flags[currentUser];
 await updateDoc(doc(db,"books",bookId,"expenses",expId),{ flags });
 showToast("✅ 已解除標記");
@@ -910,7 +910,7 @@ setTimeout(()=>{ const el=document.querySelector("[data-flagged=‘true’]"); i
       <div>
         <div style={{ fontWeight:800,fontSize:16,color:"#1E3A5F",marginBottom:6 }}>❗ 標記疑問</div>
         <div style={{ fontSize:13,color:"#64748B",marginBottom:12 }}>說明你對這筆支出的疑問</div>
-        <input placeholder="例：金額不對、我沒有參與…" value={flagNote} onChange={e=>setFlagNote(e.target.value)}
+        <input placeholder="例：金額不對、我沒有參與..." value={flagNote} onChange={e=>setFlagNote(e.target.value)}
           style={{ ...fld,marginBottom:12 }} autoFocus/>
         <div style={{ display:"flex",gap:8 }}>
           <button onClick={()=>setFlagging(null)} style={{ ...actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>取消</button>
@@ -1031,14 +1031,14 @@ return (
       {payApp==="custom"&&(
         <>
           <input placeholder="自訂名稱" value={custLabel} onChange={e=>setCustLabel(e.target.value)} style={{ ...fld,marginBottom:6 }}/>
-          <input placeholder="App 連結 https://…" value={custUrl} onChange={e=>setCustUrl(e.target.value)} style={fld}/>
+          <input placeholder="App 連結 https://..." value={custUrl} onChange={e=>setCustUrl(e.target.value)} style={fld}/>
         </>
       )}
     </div>
 
     <div style={{ display:"flex",gap:8 }}>
 
-      <button onClick={save} disabled={saving} style={{ ...actionBtn,background:bookColor,color:"#fff",width:"100%" }}>{saving?"儲存中…":"儲存"}</button>
+      <button onClick={save} disabled={saving} style={{ ...actionBtn,background:bookColor,color:"#fff",width:"100%" }}>{saving?"儲存中...":"儲存"}</button>
     </div>
   </div>
 </Modal>
@@ -1061,8 +1061,8 @@ const [pwErr,   setPwErr]   = useState("");
 const [joinEmoji, setJoinEmoji] = useState("");
 
 useEffect(()=>{
-getDoc(doc(db,"books",bookId)).then(snap=>{ if(snap.exists()) setBook({id:snap.id,…snap.data()}); setLoading(false); });
-const u=onSnapshot(query(collection(db,"books",bookId,"members"),orderBy("createdAt","asc")),snap=>setMembers(snap.docs.map(d=>({id:d.id,…d.data()}))));
+getDoc(doc(db,"books",bookId)).then(snap=>{ if(snap.exists()) setBook({id:snap.id,...snap.data()}); setLoading(false); });
+const u=onSnapshot(query(collection(db,"books",bookId,"members"),orderBy("createdAt","asc")),snap=>setMembers(snap.docs.map(d=>({id:d.id,...d.data()}))));
 return u;
 },[bookId]);
 
@@ -1107,9 +1107,9 @@ return (
 <div style={{ fontSize:13,color:"#94A3B8",marginBottom:14 }}>請向邀請你的朋友索取 6 位數邀請碼</div>
 <input placeholder="例：A1B2C3" value={code} onChange={e=>setCode(e.target.value.toUpperCase())}
 onKeyDown={e=>e.key==="Enter"&&verifyCode()}
-style={{ …fld,marginBottom:8,textAlign:"center",fontSize:22,letterSpacing:5,fontWeight:800 }} autoFocus/>
+style={{ ...fld,marginBottom:8,textAlign:"center",fontSize:22,letterSpacing:5,fontWeight:800 }} autoFocus/>
 {codeErr&&<div style={{ color:"#DC2626",fontSize:12,marginBottom:8,textAlign:"center" }}>❌ {codeErr}</div>}
-<button onClick={verifyCode} style={{ …actionBtn,background:bg,color:"#fff",width:"100%" }}>確認邀請碼</button>
+<button onClick={verifyCode} style={{ ...actionBtn,background:bg,color:"#fff",width:"100%" }}>確認邀請碼</button>
 </>
 )}
 {step==="name"&&(
@@ -1127,12 +1127,12 @@ style={{ …fld,marginBottom:8,textAlign:"center",fontSize:22,letterSpacing:5,fo
 <div style={{ fontSize:13,fontWeight:700,color:"#1E3A5F",marginBottom:8 }}>請輸入你的暱稱</div>
 <input placeholder="你的暱稱" value={name} onChange={e=>setName(e.target.value)}
 onKeyDown={e=>e.key==="Enter"&&name.trim()&&join()}
-style={{ …fld,marginBottom:8 }} autoFocus/>
+style={{ ...fld,marginBottom:8 }} autoFocus/>
 <div style={lbl}>選擇你的頭像</div>
 <div style={{ display:"flex",flexWrap:"wrap",gap:5,marginBottom:10 }}>
 {USER_EMOJIS.map(e=><button key={e} onClick={()=>setJoinEmoji(e)} style={{ fontSize:20,background:joinEmoji===e?bg+"33":"transparent",border:joinEmoji===e?`2px solid ${bg}`:"2px solid transparent",borderRadius:9,padding:"3px 5px",cursor:"pointer" }}>{e}</button>)}
 </div>
-<button onClick={()=>join()} style={{ …actionBtn,background:bg,color:"#fff",width:"100%" }}>加入記帳本</button>
+<button onClick={()=>join()} style={{ ...actionBtn,background:bg,color:"#fff",width:"100%" }}>加入記帳本</button>
 </div>
 </>
 )}
@@ -1141,11 +1141,11 @@ style={{ …fld,marginBottom:8 }} autoFocus/>
 <div style={{ fontWeight:800,fontSize:16,color:"#1E3A5F",marginBottom:14 }}>輸入密碼</div>
 <input type="password" placeholder="密碼" value={pw} onChange={e=>setPw(e.target.value)}
 onKeyDown={e=>e.key==="Enter"&&join(step.slice(3))}
-style={{ …fld,marginBottom:8 }} autoFocus/>
+style={{ ...fld,marginBottom:8 }} autoFocus/>
 {pwErr&&<div style={{ color:"#DC2626",fontSize:12,marginBottom:8 }}>❌ {pwErr}</div>}
 <div style={{ display:"flex",gap:8 }}>
-<button onClick={()=>setStep("name")} style={{ …actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>返回</button>
-<button onClick={()=>join(step.slice(3))} style={{ …actionBtn,background:bg,color:"#fff",flex:2 }}>登入</button>
+<button onClick={()=>setStep("name")} style={{ ...actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>返回</button>
+<button onClick={()=>join(step.slice(3))} style={{ ...actionBtn,background:bg,color:"#fff",flex:2 }}>登入</button>
 </div>
 </>
 )}
@@ -1163,7 +1163,7 @@ style={{ …fld,marginBottom:8 }} autoFocus/>
 <div style={{ fontWeight:700,fontSize:14,color:"#16A34A",marginBottom:8 }}>🤖 Android（Chrome）</div>
 <div style={{ fontSize:13,color:"#334155",lineHeight:1.8 }}>1. 用 <b>Chrome</b> 開啟此網址<br/>2. 點右上角 <b>⋮ 選單</b><br/>3. 選「<b>加入主畫面</b>」或<br/>　 等待底部安裝提示<br/>4. 點「<b>安裝</b>」完成！</div>
 </div>
-<button onClick={()=>setShowInstall(false)} style={{ …actionBtn,background:"#2563EB",color:"#fff",width:"100%",letterSpacing:1 }}>GOT IT! 👍</button>
+<button onClick={()=>setShowInstall(false)} style={{ ...actionBtn,background:"#2563EB",color:"#fff",width:"100%",letterSpacing:1 }}>GOT IT! 👍</button>
 </div>
 </Modal>
 )}
@@ -1192,7 +1192,7 @@ const [joiningBook, setJoiningBook] = useState(false);
 
 useEffect(()=>{
 const u=onSnapshot(query(collection(db,"books"),orderBy("createdAt","asc")), async snap=>{
-const allBooks = snap.docs.map(d=>({id:d.id,…d.data()}));
+const allBooks = snap.docs.map(d=>({id:d.id,...d.data()}));
 // Filter: only show books where currentUser is a member
 const myBooks = [];
 for(const b of allBooks){
@@ -1230,7 +1230,7 @@ const membersSnap = await getDocs(collection(db,"books",bookId,"members"));
 const exists = membersSnap.docs.find(d=>d.data().name===currentUser);
 if(!exists){
 const profile = JSON.parse(localStorage.getItem("splitpay_profile")||"{}");
-await addDoc(collection(db,"books",bookId,"members"),{ name:currentUser,…profile,hasPlusOne:false,paymentApp:null,paymentCustomLabel:"",paymentCustomUrl:"",createdAt:serverTimestamp() });
+await addDoc(collection(db,"books",bookId,"members"),{ name:currentUser,...profile,hasPlusOne:false,paymentApp:null,paymentCustomLabel:"",paymentCustomUrl:"",createdAt:serverTimestamp() });
 }
 localStorage.setItem("splitpay_book",bookId);
 onEnterBook(bookId);
@@ -1246,7 +1246,7 @@ try {
 const inviteCode=randCode();
 const ref=await addDoc(collection(db,"books"),{ name:newName.trim(),color:newColor,emoji:newEmoji,ownerId:currentUser,archived:false,inviteCode,createdAt:serverTimestamp() });
 const profile=JSON.parse(localStorage.getItem("splitpay_profile")||"{}");
-await addDoc(collection(db,"books",ref.id,"members"),{ name:currentUser,…profile,emoji:newBookUserEmoji||profile.emoji||"",nickname:newBookNickname.trim()||currentUser,hasPlusOne:false,paymentApp:null,paymentCustomLabel:"",paymentCustomUrl:"",createdAt:serverTimestamp() });
+await addDoc(collection(db,"books",ref.id,"members"),{ name:currentUser,...profile,emoji:newBookUserEmoji||profile.emoji||"",nickname:newBookNickname.trim()||currentUser,hasPlusOne:false,paymentApp:null,paymentCustomLabel:"",paymentCustomUrl:"",createdAt:serverTimestamp() });
 setNewBookNickname(""); setNewBookUserEmoji(""); setBookFormErr(false);
 localStorage.setItem("splitpay_book",ref.id);
 onEnterBook(ref.id);
@@ -1304,15 +1304,15 @@ return (
 <input placeholder="邀請碼（例：SZCFEO）" lang="en" inputMode="text" value={joinCode}
 onChange={e=>{ setJoinCode(e.target.value); setJoinCodeErr(""); }}
 onKeyDown={e=>e.key==="Enter"&&joinExistingBook()}
-style={{ …fld,marginBottom:8,textAlign:"center",fontSize:20,letterSpacing:4,fontWeight:800 }} autoFocus/>
+style={{ ...fld,marginBottom:8,textAlign:"center",fontSize:20,letterSpacing:4,fontWeight:800 }} autoFocus/>
 {joinCodeErr&&<div style={{ color:"#DC2626",fontSize:12,marginBottom:8,textAlign:"center" }}>❌ {joinCodeErr}</div>}
 <div style={{ display:"flex",gap:8 }}>
-<button onClick={()=>{ setShowJoinBook(false); setJoinCode(""); setJoinCodeErr(""); }} style={{ …actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>取消</button>
-<button onClick={joinExistingBook} disabled={joiningBook} style={{ …actionBtn,background:"#2563EB",color:"#fff",flex:2,opacity:joiningBook?.6:1 }}>{joiningBook?"加入中…":"加入"}</button>
+<button onClick={()=>{ setShowJoinBook(false); setJoinCode(""); setJoinCodeErr(""); }} style={{ ...actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>取消</button>
+<button onClick={joinExistingBook} disabled={joiningBook} style={{ ...actionBtn,background:"#2563EB",color:"#fff",flex:2,opacity:joiningBook?.6:1 }}>{joiningBook?"加入中...":"加入"}</button>
 </div>
 </div>
 ) : (
-<button onClick={()=>setShowJoinBook(true)} style={{ …actionBtn,background:"#EFF6FF",color:"#2563EB",width:"100%",marginTop:8,padding:"13px 16px",fontSize:15,border:"1.5px solid #BFDBFE" }}>🔗 加入記帳本（輸入邀請碼）</button>
+<button onClick={()=>setShowJoinBook(true)} style={{ ...actionBtn,background:"#EFF6FF",color:"#2563EB",width:"100%",marginTop:8,padding:"13px 16px",fontSize:15,border:"1.5px solid #BFDBFE" }}>🔗 加入記帳本（輸入邀請碼）</button>
 )}
 
 ```
@@ -1337,7 +1337,7 @@ style={{ …fld,marginBottom:8,textAlign:"center",fontSize:20,letterSpacing:4,fo
           </div>
           <div style={{ display:"flex",gap:8 }}>
             <button onClick={()=>setShowNew(false)} style={{ ...actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>取消</button>
-            <button onClick={createBook} disabled={creating} style={{ ...actionBtn,background:newColor,color:"#fff",flex:2,opacity:creating?.6:1 }}>{creating?"建立中…":"建立"}</button>
+            <button onClick={createBook} disabled={creating} style={{ ...actionBtn,background:newColor,color:"#fff",flex:2,opacity:creating?.6:1 }}>{creating?"建立中...":"建立"}</button>
           </div>
         </div>
       )
@@ -1405,8 +1405,8 @@ return (
 <div style={{ fontSize:13,color:"#94A3B8",marginBottom:14 }}>輸入你的名字開始使用</div>
 <input placeholder="你的名字" value={name} onChange={e=>setName(e.target.value)}
 onKeyDown={e=>e.key==="Enter"&&name.trim()&&handleName()}
-style={{ …fld,marginBottom:12 }} autoFocus/>
-<button onClick={handleName} style={{ …actionBtn,background:"#2563EB",color:"#fff",width:"100%" }}>繼續</button>
+style={{ ...fld,marginBottom:12 }} autoFocus/>
+<button onClick={handleName} style={{ ...actionBtn,background:"#2563EB",color:"#fff",width:"100%" }}>繼續</button>
 </>
 )}
 {step==="setup"&&(
@@ -1418,11 +1418,11 @@ style={{ …fld,marginBottom:12 }} autoFocus/>
 </div>
 <input type="password" placeholder="設定密碼" value={pw} onChange={e=>setPw(e.target.value)}
 onKeyDown={e=>e.key==="Enter"&&handleRegister()}
-style={{ …fld,marginBottom:8 }}/>
+style={{ ...fld,marginBottom:8 }}/>
 {err&&<div style={{ color:"#DC2626",fontSize:12,marginBottom:8 }}>❌ {err}</div>}
 <div style={{ display:"flex",gap:8 }}>
-<button onClick={()=>setStep("name")} style={{ …actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>返回</button>
-<button onClick={handleRegister} style={{ …actionBtn,background:"#2563EB",color:"#fff",flex:2 }}>完成註冊</button>
+<button onClick={()=>setStep("name")} style={{ ...actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>返回</button>
+<button onClick={handleRegister} style={{ ...actionBtn,background:"#2563EB",color:"#fff",flex:2 }}>完成註冊</button>
 </div>
 </>
 )}
@@ -1432,11 +1432,11 @@ style={{ …fld,marginBottom:8 }}/>
 <div style={{ fontSize:13,color:"#94A3B8",marginBottom:14 }}>輸入密碼登入</div>
 <input type="password" placeholder="密碼" value={pw} onChange={e=>setPw(e.target.value)}
 onKeyDown={e=>e.key==="Enter"&&handleLogin()}
-style={{ …fld,marginBottom:8 }} autoFocus/>
+style={{ ...fld,marginBottom:8 }} autoFocus/>
 {err&&<div style={{ color:"#DC2626",fontSize:12,marginBottom:8 }}>❌ {err}</div>}
 <div style={{ display:"flex",gap:8 }}>
-<button onClick={()=>{ setStep("name"); setPw(""); setErr(""); }} style={{ …actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>返回</button>
-<button onClick={handleLogin} style={{ …actionBtn,background:"#2563EB",color:"#fff",flex:2 }}>登入</button>
+<button onClick={()=>{ setStep("name"); setPw(""); setErr(""); }} style={{ ...actionBtn,background:"#F1F5F9",color:"#64748B",flex:1 }}>返回</button>
+<button onClick={handleLogin} style={{ ...actionBtn,background:"#2563EB",color:"#fff",flex:2 }}>登入</button>
 </div>
 </>
 )}
@@ -1459,7 +1459,7 @@ const joinBookId = new URLSearchParams(window.location.search).get("join");
 // Listen to members for settings panel
 useEffect(()=>{
 if(!activeBookId) return;
-const u=onSnapshot(query(collection(db,"books",activeBookId,"members"),orderBy("createdAt","asc")),snap=>setMembers(snap.docs.map(d=>({id:d.id,…d.data()}))));
+const u=onSnapshot(query(collection(db,"books",activeBookId,"members"),orderBy("createdAt","asc")),snap=>setMembers(snap.docs.map(d=>({id:d.id,...d.data()}))));
 return u;
 },[activeBookId]);
 

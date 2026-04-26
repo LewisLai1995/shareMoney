@@ -20,6 +20,11 @@
     <meta property="og:title" content="Accounting book · NOMO-1" />
     <meta property="og:description" content="朋友出遊記帳、即時分帳，多人共用" />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://share-money-two.vercel.app/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:image" content="https://share-money-two.vercel.app/icon-512.png" />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -35,8 +40,10 @@
         padding: 0;
         height: 100%;
         overflow-x: hidden;
-        background: #1D4ED8;
-        /* iOS safe area */
+        background: #2563EB; /* default - JS will override per book color */
+      }
+      /* iOS notch / Dynamic Island safe areas */
+      #root {
         padding-top: env(safe-area-inset-top);
         padding-bottom: env(safe-area-inset-bottom);
       }

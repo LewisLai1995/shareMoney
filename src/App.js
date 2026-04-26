@@ -356,19 +356,27 @@ function SpinnerWheel({ names, onDone }) {
   const [spinning, setSpinning] = useState(false);
   const [winner,   setWinner]   = useState(null);
   const [angle,    setAngle]    = useState(0);
+  const [spinKey,  setSpinKey]  = useState(0);
 
   const spin = () => {
     if(spinning) return;
     setSpinning(true); setWinner(null);
-    const winIdx = Math.floor(Math.random()*names.length);
-    const sliceAngle2 = 360/names.length;
-    // Rotate so the pointer (top) lands on the winner slice
-    const winAngle = -(winIdx * sliceAngle2) + 90 - sliceAngle2/2;
-    const fullRotations = (Math.floor(Math.random()*4) + 5) * 360;
-    setAngle(fullRotations + winAngle);
+    setSpinKey(k=>k+1); setAngle(0);
+    const winIdx = Math.floor(Math.random() * names.length);
+    const sliceAngle2 = 360 / names.length;
+    // Add random offset within the winning slice (0.1~0.9 of slice) for variety
+    const sliceOffset = (0.1 + Math.random() * 0.8) * sliceAngle2;
+    // Pointer is at top (0deg). Each slice starts at i*sliceAngle2.
+    // We want pointer to land inside winIdx slice
+    const targetAngle = winIdx * sliceAngle2 + sliceOffset;
+    // Full rotations: 8-14 rotations for excitement, each run different
+    const extraRounds = (8 + Math.floor(Math.random() * 6)) * 360;
+    // Final angle: enough full spins + land on target
+    const finalAngle = extraRounds + (360 - targetAngle);
+    setAngle(finalAngle);
     setTimeout(()=>{
       setWinner(names[winIdx]); setSpinning(false);
-    }, 2200);
+    }, 2500);
   };
 
   const sliceAngle = 360/names.length;
@@ -378,7 +386,7 @@ function SpinnerWheel({ names, onDone }) {
         <div style={{ fontSize:28,fontWeight:800,color:"#1E3A5F",marginBottom:4 }}>🎰 誰多付 NT$1？</div>
         <div style={{ fontSize:13,color:"#94A3B8",marginBottom:16 }}>金額除不盡，轉盤決定！</div>
         <div style={{ position:"relative",width:200,height:200,margin:"0 auto 16px" }}>
-          <svg width={200} height={200} style={{ transform:`rotate(${angle}deg)`,transition:spinning?"transform 2.2s cubic-bezier(.17,.67,.12,1)":"none" }}>
+          <svg key={spinKey} width={200} height={200} style={{ transform:`rotate(${angle}deg)`,transition:spinning?"transform 2.5s cubic-bezier(.22,.68,0,1.2)":"none" }}>
             {names.map((n,i)=>{
               const a1=(i*sliceAngle-90)*Math.PI/180, a2=((i+1)*sliceAngle-90)*Math.PI/180;
               const x1=100+90*Math.cos(a1),y1=100+90*Math.sin(a1),x2=100+90*Math.cos(a2),y2=100+90*Math.sin(a2);
@@ -628,7 +636,6 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
             {isOwner&&!isArchived&&<button onClick={()=>{ setArchiveConf(true); setShowMenu(false); }} style={{ ...actionBtn,background:"#FFF7ED",color:"#D97706",width:"100%",fontSize:12,marginBottom:6 }}>📦 封存記帳本</button>}
             {isOwner&&isArchived&&<button onClick={()=>{ setUnarchiveConf(true); setShowMenu(false); }} style={{ ...actionBtn,background:"#F0FDF4",color:"#16A34A",width:"100%",fontSize:12,marginBottom:6 }}>🔓 解除封存</button>}
             <button onClick={()=>{ setShowInstallGuide(true); setShowMenu(false); }} style={{ ...actionBtn,background:"#EFF6FF",color:"#2563EB",width:"100%",fontSize:12,marginBottom:6 }}>📲 建立捷徑教學</button>
-            <button onClick={()=>{ if(window.confirm("確定要切換帳號嗎？")) { localStorage.removeItem("splitpay_user"); localStorage.removeItem("splitpay_book"); window.location.reload(); } setShowMenu(false); }} style={{ ...actionBtn,background:"#F1F5F9",color:"#64748B",width:"100%",fontSize:12 }}>🔀 切換帳號</button>
           </div>
         </div>
       )}
@@ -850,11 +857,14 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
                         <button onClick={()=>{
                           const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
                           const storeUrl=isIOS?app.iosStore:app.androidStore;
-                          // Try app scheme first, fallback to store
-                          const iframe=document.createElement("iframe");
-                          iframe.style.display="none"; iframe.src=app.appScheme;
-                          document.body.appendChild(iframe);
-                          setTimeout(()=>{ document.body.removeChild(iframe); if(storeUrl) window.open(storeUrl,"_blank"); },1200);
+                          if(app.id==="linepay"||app.id==="jkopay"||app.id==="allpay"){
+                            // These use universal links - just open
+                            window.open(isIOS?app.iosStore:app.androidStore,"_blank");
+                          } else {
+                            // Bank apps: try scheme, open store after delay if not installed
+                            try{ window.location.href=app.appScheme; }catch(e){}
+                            setTimeout(()=>{ window.open(storeUrl,"_blank"); },2000);
+                          }
                         }} style={{ width:"100%",marginTop:8,display:"flex",alignItems:"center",gap:7,background:"#1D4ED8",borderRadius:8,padding:"8px 12px",cursor:"pointer",border:"none",fontFamily:"inherit" }}>
                           <span style={{ fontSize:14 }}>{emoji}</span>
                           <span style={{ color:"#fff",fontWeight:700,fontSize:12 }}>開啟 {label} 付款</span>
@@ -878,7 +888,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
                     <div key={m.name} style={{ display:"flex",alignItems:"center",gap:9,marginBottom:8 }}>
                       <Avatar name={m.name} emoji={m.emoji} members={members} size={30}/>
                       <div style={{ flex:1,fontWeight:700,color:"#1E3A5F",fontSize:13 }}>{m.nickname||m.name}</div>
-                      <div style={{ fontWeight:800,color:"#EF4444",fontSize:14 }}>{"🐛".repeat(Math.min(count,5))} ×{count}</div>
+                      <div style={{ fontWeight:800,color:"#EF4444",fontSize:14 }}>×{count} 次</div>
                     </div>
                   ):null;
                 })}
@@ -1201,6 +1211,7 @@ function HomeScreen({ currentUser, onEnterBook }) {
   const [bookFormErr, setBookFormErr] = useState(false);
   const [bookFormShake, setBookFormShake] = useState(false);
   const [showJoinBook, setShowJoinBook] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinCodeErr, setJoinCodeErr] = useState("");
   const [joiningBook, setJoiningBook] = useState(false);
@@ -1304,13 +1315,13 @@ function HomeScreen({ currentUser, onEnterBook }) {
             <div style={{ color:"#CBD5E1",fontSize:18 }}>›</div>
           </button>
         ))}
-        {archived.length>0&&<div style={{ fontSize:11,color:"#94A3B8",fontWeight:700,margin:"16px 0 8px" }}>📦 封存記帳本</div>}
-        {archived.map(b=>(
-          <button key={b.id} onClick={()=>{ localStorage.setItem("splitpay_book",b.id); onEnterBook(b.id); }} style={{ display:"flex",alignItems:"center",gap:12,width:"100%",border:"none",background:"#F8F9FA",borderRadius:16,padding:"12px 16px",marginBottom:8,cursor:"pointer",fontFamily:"inherit",opacity:.7 }}>
-            <div style={{ width:38,height:38,borderRadius:10,background:"#94A3B8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>📦</div>
-            <div style={{ flex:1,textAlign:"left" }}><div style={{ fontWeight:700,fontSize:14,color:"#64748B" }}>{b.name}</div></div>
+        {archived.length>0&&(
+          <button onClick={()=>setShowArchived(true)} style={{ display:"flex",alignItems:"center",gap:10,width:"100%",border:"1.5px solid #E2E8F0",background:"transparent",borderRadius:14,padding:"12px 16px",marginTop:4,cursor:"pointer",fontFamily:"inherit" }}>
+            <span style={{ fontSize:18 }}>📦</span>
+            <span style={{ fontSize:13,color:"#64748B",fontWeight:700 }}>查看封存記帳本 ({archived.length})</span>
+            <span style={{ marginLeft:"auto",color:"#CBD5E1",fontSize:16 }}>›</span>
           </button>
-        ))}
+        )}
         {/* Join existing book */}
         {showJoinBook ? (
           <div style={{ background:"#fff",borderRadius:16,padding:18,marginTop:8,boxShadow:"0 2px 12px rgba(37,99,235,.09)" }}>
@@ -1358,6 +1369,33 @@ function HomeScreen({ currentUser, onEnterBook }) {
         }
       </div>
     </div>
+
+    {/* Archived books page */}
+    {showArchived&&(
+      <div style={{ position:"fixed",inset:0,background:"#F0F7FF",zIndex:500,fontFamily:"'Noto Sans TC',sans-serif",overflowY:"auto" }}>
+        <div style={{ background:"linear-gradient(135deg,#64748B,#94A3B8)",padding:"calc(env(safe-area-inset-top,0px)+16px) 18px 16px",borderRadius:"0 0 20px 20px" }}>
+          <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+            <button onClick={()=>setShowArchived(false)} style={{ background:"rgba(255,255,255,.2)",border:"none",borderRadius:10,padding:"6px 9px",cursor:"pointer",color:"#fff",fontSize:16 }}>‹</button>
+            <div style={{ color:"#fff",fontWeight:800,fontSize:18 }}>📦 封存記帳本</div>
+          </div>
+        </div>
+        <div style={{ padding:"16px 16px 80px" }}>
+          {archived.length===0
+            ? <div style={{ textAlign:"center",color:"#94A3B8",padding:40 }}>沒有封存的記帳本</div>
+            : archived.map(b=>(
+              <button key={b.id} onClick={()=>{ localStorage.setItem("splitpay_book",b.id); onEnterBook(b.id); setShowArchived(false); }} style={{ display:"flex",alignItems:"center",gap:12,width:"100%",border:"none",background:"#fff",borderRadius:16,padding:"14px 16px",marginBottom:10,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 10px rgba(0,0,0,.06)",opacity:.8 }}>
+                <div style={{ width:44,height:44,borderRadius:12,background:"#94A3B8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0 }}>📦</div>
+                <div style={{ flex:1,textAlign:"left" }}>
+                  <div style={{ fontWeight:700,fontSize:15,color:"#64748B" }}>{b.name}</div>
+                  <div style={{ fontSize:11,color:"#94A3B8",marginTop:1 }}>已封存 · {b.ownerId===currentUser?"你建立的":"成員"}</div>
+                </div>
+                <div style={{ color:"#CBD5E1",fontSize:16 }}>›</div>
+              </button>
+            ))
+          }
+        </div>
+      </div>
+    )}
   );
 }
 

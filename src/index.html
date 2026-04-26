@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <meta name="theme-color" content="#2563EB" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="NOMO-1" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/icon-192.png" />
+
+    <!-- SEO / Share -->
+    <meta name="description" content="朋友出遊記帳、即時分帳，多人共用" />
+    <meta property="og:title" content="Accounting book · NOMO-1" />
+    <meta property="og:description" content="朋友出遊記帳、即時分帳，多人共用" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="%PUBLIC_URL%/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:image" content="%PUBLIC_URL%/icon-512.png" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;800&display=swap" rel="stylesheet" />
+
+    <title>Accounting book · NOMO-1</title>
+
+    <style>
+      /* Prevent overscroll bounce & ensure full height */
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow-x: hidden;
+        background: #2563EB; /* default - JS will override per book color */
+      }
+      /* iOS notch / Dynamic Island safe areas */
+      #root {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      #root {
+        min-height: 100vh;
+      }
+      /* Prevent text selection on UI elements */
+      button { -webkit-tap-highlight-color: transparent; }
+      /* Smooth scrolling */
+      * { -webkit-overflow-scrolling: touch; }
+    </style>
+  </head>
+  <body>
+    <noscript>請啟用 JavaScript 來使用此應用程式。</noscript>
+    <div id="root"></div>
+
+    <!-- Register Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker
+            .register('/sw.js')
+            .then(function (reg) {
+              console.log('SW registered:', reg.scope);
+            })
+            .catch(function (err) {
+              console.log('SW registration failed:', err);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>

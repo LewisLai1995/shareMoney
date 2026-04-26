@@ -6,7 +6,7 @@ import {
   query, orderBy, serverTimestamp
 } from "firebase/firestore";
 
-// ── Firebase ───────────────────────────────────────────────────────────────────
+// -- Firebase -------------------------------------------------------------------
 const firebaseConfig = {
   apiKey: "AIzaSyCvMPTbuuoT3vtPHZ-rGVGlxHy__Q0WvbQ",
   authDomain: "sharemoney-3cf22.firebaseapp.com",
@@ -18,7 +18,7 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 
-// ── Constants ──────────────────────────────────────────────────────────────────
+// -- Constants ------------------------------------------------------------------
 const MEMBER_COLORS = ["#2563EB","#7C3AED","#DC2626","#059669","#D97706","#DB2777","#0891B2","#64748B"];
 const BOOK_COLORS   = ["#2563EB","#7C3AED","#DC2626","#059669","#D97706","#DB2777","#0891B2","#374151"];
 const BOOK_EMOJIS   = ["💳","✈️","🏖️","🍜","🎮","🎉","🏕️","🛒","🎵","⚽","🐶","🌸"];
@@ -60,7 +60,7 @@ const getMColor= (name, members) => MEMBER_COLORS[Math.max(0,members.findIndex(m
 const randCode = () => Math.random().toString(36).slice(2,8).toUpperCase();
 const hashPw   = async pw => { const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw)); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join(""); };
 
-// ── useThemeColor hook ────────────────────────────────────────────────────────
+// -- useThemeColor hook --------------------------------------------------------
 function useThemeColor(color) {
   useEffect(()=>{
     const meta = document.querySelector("meta[name='theme-color']");
@@ -73,7 +73,7 @@ function useThemeColor(color) {
   },[color]);
 }
 
-// ── Donut Chart ────────────────────────────────────────────────────────────────
+// -- Donut Chart ----------------------------------------------------------------
 function DonutChart({ data, total, size=160 }) {
   const r = 54, cx = 80, cy = 80, stroke = 20;
   const circ = 2 * Math.PI * r;
@@ -101,7 +101,7 @@ function DonutChart({ data, total, size=160 }) {
   );
 }
 
-// ── Spinner ────────────────────────────────────────────────────────────────────
+// -- Spinner --------------------------------------------------------------------
 function Spinner({ fullscreen }) {
   const el = <div style={{ width:36,height:36,borderRadius:"50%",border:"3px solid #EFF6FF",borderTopColor:"#2563EB",animation:"spin .7s linear infinite" }}/>;
   if(!fullscreen) return <div style={{ display:"flex",justifyContent:"center",padding:32 }}>{el}</div>;
@@ -113,12 +113,12 @@ function Spinner({ fullscreen }) {
   );
 }
 
-// ── Toast ──────────────────────────────────────────────────────────────────────
+// -- Toast ----------------------------------------------------------------------
 function Toast({ msg }) {
   return msg ? <div style={{ position:"fixed",bottom:28,left:"50%",transform:"translateX(-50%)",background:"#1E3A5F",color:"#fff",borderRadius:14,padding:"10px 22px",fontWeight:700,fontSize:14,zIndex:9999,whiteSpace:"nowrap",boxShadow:"0 8px 24px rgba(30,58,95,.25)",animation:"fadeUp .2s ease" }}>{msg}</div> : null;
 }
 
-// ── Modal ──────────────────────────────────────────────────────────────────────
+// -- Modal ----------------------------------------------------------------------
 function Modal({ children, onClose }) {
   return (
     <div onClick={onClose} style={{ position:"fixed",inset:0,background:"rgba(15,23,42,.5)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}>
@@ -127,7 +127,7 @@ function Modal({ children, onClose }) {
   );
 }
 
-// ── Avatar ─────────────────────────────────────────────────────────────────────
+// -- Avatar ---------------------------------------------------------------------
 function Avatar({ name, emoji, members, size=36 }) {
   const bg = getMColor(name||"?", members||[]);
   return (
@@ -137,14 +137,14 @@ function Avatar({ name, emoji, members, size=36 }) {
   );
 }
 
-// ── Chip ───────────────────────────────────────────────────────────────────────
+// -- Chip -----------------------------------------------------------------------
 function Chip({ label, active, color, onClick, small }) {
   return (
     <button onClick={onClick} style={{ border:"none",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",borderRadius:20,padding:small?"4px 9px":"6px 13px",fontSize:small?11:12,fontWeight:700,flexShrink:0,transition:"all .15s",background:active?(color||"#2563EB"):"#EFF6FF",color:active?"#fff":"#334155" }}>{label}</button>
   );
 }
 
-// ── WeekPicker ─────────────────────────────────────────────────────────────────
+// -- WeekPicker -----------------------------------------------------------------
 function WeekPicker({ selected, onChange, datesWithData=[], datesFlagged=[] }) {
   const [offset,setOffset]     = useState(0);
   const [showPicker,setShowPicker] = useState(false);
@@ -205,7 +205,7 @@ function WeekPicker({ selected, onChange, datesWithData=[], datesFlagged=[] }) {
   );
 }
 
-// ── ExpenseForm ────────────────────────────────────────────────────────────────
+// -- ExpenseForm ----------------------------------------------------------------
 function ExpenseForm({ members, initialData, onSave, onCancel, saveLabel="確認新增", loading, bookColor="#2563EB" }) {
   const init = { desc:"",amount:"",currency:"TWD",paidBy:members[0]?.name||"",category:CATEGORIES[0].id,splitWith:members.map(m=>m.name),plusOnes:{},date:todayStr(),...(initialData||{}) };
   const [form,setForm] = useState(init);
@@ -334,7 +334,7 @@ function ExpenseForm({ members, initialData, onSave, onCancel, saveLabel="確認
   );
 }
 
-// ── ConfirmDialog ──────────────────────────────────────────────────────────────
+// -- ConfirmDialog --------------------------------------------------------------
 function ConfirmDialog({ msg, sub, confirmLabel="確認刪除", confirmColor="#EF4444", onConfirm, onCancel }) {
   return (
     <Modal onClose={onCancel}>
@@ -351,7 +351,7 @@ function ConfirmDialog({ msg, sub, confirmLabel="確認刪除", confirmColor="#E
   );
 }
 
-// ── SpinnerWheel (決定誰多付1元) ───────────────────────────────────────────────
+// -- SpinnerWheel (決定誰多付1元) -----------------------------------------------
 function SpinnerWheel({ names, onDone }) {
   const [spinning, setSpinning] = useState(false);
   const [winner,   setWinner]   = useState(null);
@@ -360,12 +360,12 @@ function SpinnerWheel({ names, onDone }) {
   const spin = () => {
     if(spinning) return;
     setSpinning(true); setWinner(null);
-    const sliceAngle2 = 360/names.length;
-    // Calculate angle so the spinner stops pointing at winIdx
-    const winAngle = -(winIdx * sliceAngle2) + 90 - sliceAngle2/2;
-    const fullRotations = Math.floor(Math.random()*5 + 5) * 360;
-    setAngle(fullRotations + winAngle);
     const winIdx = Math.floor(Math.random()*names.length);
+    const sliceAngle2 = 360/names.length;
+    // Rotate so the pointer (top) lands on the winner slice
+    const winAngle = -(winIdx * sliceAngle2) + 90 - sliceAngle2/2;
+    const fullRotations = (Math.floor(Math.random()*4) + 5) * 360;
+    setAngle(fullRotations + winAngle);
     setTimeout(()=>{
       setWinner(names[winIdx]); setSpinning(false);
     }, 2200);
@@ -406,7 +406,7 @@ function SpinnerWheel({ names, onDone }) {
   );
 }
 
-// ── BookApp ────────────────────────────────────────────────────────────────────
+// -- BookApp --------------------------------------------------------------------
 function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
   const [book,     setBook]     = useState(null);
   const [members,  setMembers]  = useState([]);
@@ -442,7 +442,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
     return ()=>{ u1();u2();u3(); };
   },[bookId]);
 
-  // ── Balances (fixed logic) ──
+  // -- Balances (fixed logic) --
   const balances = Object.fromEntries(members.map(m=>[m.name,0]));
   expenses.forEach(exp=>{
     const sw  = exp.splitWith||[];
@@ -460,7 +460,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
     });
   });
 
-  // ── Settlements ──
+  // -- Settlements --
   const settlements=[];
   const dArr=Object.entries(balances).filter(([,v])=>v<-0.5).map(([n,v])=>({name:n,val:v})).sort((a,b)=>a.val-b.val);
   const cArr=Object.entries(balances).filter(([,v])=>v>0.5).map(([n,v])=>({name:n,val:v})).sort((a,b)=>b.val-a.val);
@@ -497,6 +497,11 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
   })).filter(c=>c.value>0);
 
   // Per-member totals
+  const unluckyCount = members.reduce((acc,m)=>{
+    acc[m.name] = expenses.filter(e=>e.extraPayer===m.name).length;
+    return acc;
+  },{});
+
   const memberTotals = members.map(m=>({
     name:m.name, emoji:m.emoji, nickname:m.nickname,
     paid:expenses.filter(e=>e.paidBy===m.name).reduce((s,e)=>s+toTWD(e.amount,e.currency),0),
@@ -508,7 +513,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
     },0)
   }));
 
-  // ── CRUD ──
+  // -- CRUD --
   const saveExpense = async data => {
     if(isArchived){ showToast("⚠️ 此記帳本已封存，無法新增"); return; }
     if(!members.find(m=>m.name===currentUser)){ showToast("⚠️ 你不是此記帳本的成員"); return; }
@@ -553,7 +558,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
     const exp = expenses.find(e=>e.id===expId);
     if(!exp) return;
     const flags = { ...(exp.flags||{}), [currentUser]: note||"有疑問" };
-    await updateDoc(doc(db,"books",bookId,"expenses",expId),{ flags });
+    await updateDoc(doc(db,"books",bookId,"expenses",expId),{ flags, flagResolution:null });
     setFlagging(null); setFlagNote(""); showToast("❗ 已標記疑問");
   };
 
@@ -569,7 +574,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
   if(!fbReady) return <Spinner fullscreen/>;
 
   return (
-    <div onTouchStart={e=>{ swipeTouchX.current=e.touches[0].clientX; }} onTouchEnd={e=>{ const dx=e.changedTouches[0].clientX-(swipeTouchX.current||0); if(dx>window.innerWidth*0.55){ onBack(); } swipeTouchX.current=null; }} style={{ fontFamily:"'Noto Sans TC','PingFang TC',sans-serif",background:"#F0F7FF",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",paddingBottom:"calc(80px + env(safe-area-inset-bottom, 0px))" }}>
+    <div onTouchStart={e=>{ swipeTouchX.current=e.touches[0].clientX; }} onTouchEnd={e=>{ const dx=e.changedTouches[0].clientX-(swipeTouchX.current||0); if(dx>window.innerWidth*0.72){ onBack(); } swipeTouchX.current=null; }} style={{ fontFamily:"'Noto Sans TC','PingFang TC',sans-serif",background:"#F0F7FF",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",paddingBottom:"calc(80px + env(safe-area-inset-bottom, 0px))" }}>
 
       {/* Header */}
       <div style={{ width:"100%",maxWidth:540,background:`linear-gradient(135deg,${bookColor}ee,${bookColor})`,padding:"calc(env(safe-area-inset-top, 0px) + 10px) 16px 12px",borderRadius:"0 0 18px 18px",boxShadow:`0 8px 28px ${bookColor}44` }}>
@@ -641,7 +646,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
               const baseUrl = window.location.origin;
               const shareText = `🎉 ${currentUser} 邀請你加入「${book?.name}」記帳本！\n點開連結，點選加入記帳本，輸入邀請碼就可以一起記帳分帳 👇\n\n🔗 ${baseUrl}\n🔑 邀請碼：${book?.inviteCode}`;
               if(navigator.share){
-                try{ await navigator.share({ title:"加入記帳本 NOMO-1", text:shareText, url:baseUrl }); }
+                try{ await navigator.share({ title:"加入記帳本 NOMO-1", text:shareText }); }
                 catch(e){ await navigator.clipboard?.writeText(shareText); showToast("📋 已複製邀請訊息"); }
               } else {
                 await navigator.clipboard?.writeText(shareText);
@@ -669,7 +674,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
 
       <div style={{ width:"100%",maxWidth:540,padding:"12px 12px 0" }}>
 
-        {/* ══ EXPENSES ══ */}
+        {/* -- EXPENSES -- */}
         {tab==="expenses"&&(
           <div>
             {/* New expense form - hidden if archived */}
@@ -748,7 +753,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
                   {isEditing&&isMine&&!isArchived&&(
                     <div style={{ borderRadius:"0 0 14px 14px",overflow:"hidden",outline:`2px solid ${bookColor}`,outlineOffset:-1 }}>
                       <ExpenseForm key={"e"+exp.id} members={members} initialData={inlineEdit} loading={saving} bookColor={bookColor}
-                        onSave={saveExpense} onCancel={()=>setInlineEdit(null)} saveLabel="更新"/>
+                        onSave={saveExpense} onCancel={()=>{ if(hasFlag){ updateDoc(doc(db,"books",bookId,"expenses",exp.id),{flagResolution:"rejected"}); } setInlineEdit(null); }} saveLabel="已更新"/>
                       {hasFlag&&(
                         <div style={{ display:"flex",gap:8,padding:"8px 12px",background:"#FEF2F2",borderTop:"1px solid #FECACA" }}>
                           <div style={{ fontSize:12,color:"#EF4444",fontWeight:700,flex:1,alignSelf:"center" }}>❗ 此筆有爭議，更新後需確認</div>
@@ -775,7 +780,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
           </div>
         )}
 
-        {/* ══ SPLIT/結算 ══ */}
+        {/* -- SPLIT/結算 -- */}
         {tab==="split"&&(
           <div>
             {/* Donut chart */}
@@ -845,8 +850,11 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
                         <button onClick={()=>{
                           const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
                           const storeUrl=isIOS?app.iosStore:app.androidStore;
-                          window.location.href=app.appScheme;
-                          setTimeout(()=>{ if(storeUrl) window.open(storeUrl,"_blank"); },1500);
+                          // Try app scheme first, fallback to store
+                          const iframe=document.createElement("iframe");
+                          iframe.style.display="none"; iframe.src=app.appScheme;
+                          document.body.appendChild(iframe);
+                          setTimeout(()=>{ document.body.removeChild(iframe); if(storeUrl) window.open(storeUrl,"_blank"); },1200);
                         }} style={{ width:"100%",marginTop:8,display:"flex",alignItems:"center",gap:7,background:"#1D4ED8",borderRadius:8,padding:"8px 12px",cursor:"pointer",border:"none",fontFamily:"inherit" }}>
                           <span style={{ fontSize:14 }}>{emoji}</span>
                           <span style={{ color:"#fff",fontWeight:700,fontSize:12 }}>開啟 {label} 付款</span>
@@ -859,10 +867,27 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
                 })
               }
             </div>
+
+            {/* 小衰鬼 counter */}
+            {Object.values(unluckyCount).some(v=>v>0)&&(
+              <div style={{ background:"#fff",borderRadius:18,padding:16,marginTop:12,boxShadow:"0 2px 10px rgba(37,99,235,.07)" }}>
+                <div style={{ fontWeight:800,fontSize:14,color:"#1E3A5F",marginBottom:12 }}>🐛 誰是小衰鬼</div>
+                {members.map(m=>{
+                  const count=unluckyCount[m.name]||0;
+                  return count>0?(
+                    <div key={m.name} style={{ display:"flex",alignItems:"center",gap:9,marginBottom:8 }}>
+                      <Avatar name={m.name} emoji={m.emoji} members={members} size={30}/>
+                      <div style={{ flex:1,fontWeight:700,color:"#1E3A5F",fontSize:13 }}>{m.nickname||m.name}</div>
+                      <div style={{ fontWeight:800,color:"#EF4444",fontSize:14 }}>{"🐛".repeat(Math.min(count,5))} ×{count}</div>
+                    </div>
+                  ):null;
+                })}
+              </div>
+            )}
           </div>
         )}
 
-        {/* ══ MEMBERS ══ */}
+        {/* -- MEMBERS -- */}
         {tab==="members"&&(
           <div>
             {members.map(m=>{
@@ -931,6 +956,8 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
           </div>
         </Modal>
       )}
+      {/* 小衰鬼 section - shown in split tab */}
+
       {confirmDel&&<ConfirmDialog msg="確定刪除這筆支出？" sub="刪除後無法復原" onConfirm={()=>deleteExpense(confirmDel)} onCancel={()=>setConfirmDel(null)}/>}
       {archiveConf&&<ConfirmDialog msg={`封存「${book?.name}」？`} sub="封存後無法繼續新增支出" confirmLabel="確認封存" confirmColor="#D97706" onConfirm={async()=>{ await updateDoc(doc(db,"books",bookId),{archived:true}); setArchiveConf(false); showToast("📦 已封存"); }} onCancel={()=>setArchiveConf(false)}/>}
       {unarchiveConf&&<ConfirmDialog msg={`解除封存「${book?.name}」？`} confirmLabel="解除封存" confirmColor="#16A34A" onConfirm={async()=>{ await updateDoc(doc(db,"books",bookId),{archived:false}); setUnarchiveConf(false); showToast("🔓 已解除封存"); }} onCancel={()=>setUnarchiveConf(false)}/>}
@@ -954,7 +981,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
   );
 }
 
-// ── Settings Panel ─────────────────────────────────────────────────────────────
+// -- Settings Panel -------------------------------------------------------------
 function SettingsPanel({ currentUser, userProfile, members, bookId, onClose, onSwitchUser, bookColor="#2563EB" }) {
   const [nickname, setNickname] = useState(userProfile?.nickname||"");
   const [selEmoji, setSelEmoji] = useState(userProfile?.emoji||"");
@@ -1035,7 +1062,7 @@ function SettingsPanel({ currentUser, userProfile, members, bookId, onClose, onS
   );
 }
 
-// ── JoinScreen ─────────────────────────────────────────────────────────────────
+// -- JoinScreen -----------------------------------------------------------------
 function JoinScreen({ bookId, currentUser, onDone }) {
   const [book,    setBook]    = useState(null);
   const [members, setMembers] = useState([]);
@@ -1159,7 +1186,7 @@ function JoinScreen({ bookId, currentUser, onDone }) {
   );
 }
 
-// ── HomeScreen ─────────────────────────────────────────────────────────────────
+// -- HomeScreen -----------------------------------------------------------------
 function HomeScreen({ currentUser, onEnterBook }) {
   const [books,    setBooks]    = useState([]);
   const [loading,  setLoading]  = useState(true);
@@ -1334,7 +1361,7 @@ function HomeScreen({ currentUser, onEnterBook }) {
   );
 }
 
-// ── LoginScreen ────────────────────────────────────────────────────────────────
+// -- LoginScreen ----------------------------------------------------------------
 function LoginScreen({ onLogin, pendingJoin }) {
   const [name, setName] = useState("");
   const [pw,   setPw]   = useState("");
@@ -1431,7 +1458,7 @@ function LoginScreen({ onLogin, pendingJoin }) {
   );
 }
 
-// ── Root ───────────────────────────────────────────────────────────────────────
+// -- Root -----------------------------------------------------------------------
 export default function App() {
   const [currentUser,  setCurrentUser]  = useState(()=>localStorage.getItem("splitpay_user")||null);
   const [activeBookId, setActiveBookId] = useState(()=>localStorage.getItem("splitpay_book")||null);
@@ -1489,7 +1516,7 @@ export default function App() {
   );
 }
 
-// ── Style tokens ───────────────────────────────────────────────────────────────
+// -- Style tokens ---------------------------------------------------------------
 const fld = { width:"100%",maxWidth:"100%",padding:"8px 10px",border:"1.5px solid #BFDBFE",borderRadius:9,fontSize:14,fontFamily:"inherit",background:"#F8FBFF",color:"#1E3A5F",transition:"border .2s",marginBottom:0,boxSizing:"border-box",display:"block",minWidth:0 };
 const lbl = { fontSize:11,fontWeight:700,color:"#64748B",marginBottom:5,textTransform:"uppercase",letterSpacing:.4,display:"block" };
 const actionBtn = { border:"none",borderRadius:10,padding:"10px 16px",cursor:"pointer",fontWeight:800,fontSize:14,fontFamily:"inherit",transition:"all .15s" };
@@ -1497,4 +1524,4 @@ const wkBtn = { fontSize:10,fontWeight:700,background:"#EFF6FF",color:"#2563EB",
 const arrowBtn = { background:"none",border:"none",cursor:"pointer",color:"#94A3B8",fontSize:16,padding:"0 3px",lineHeight:1,flexShrink:0 };
 const pgBtn = { background:"#EFF6FF",border:"none",borderRadius:7,width:26,height:26,cursor:"pointer",color:"#2563EB",fontSize:15,fontWeight:700,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center" };
 
-// ── useThemeColor: syncs status bar + body bg to book color ───────────────────
+// -- useThemeColor: syncs status bar + body bg to book color -------------------

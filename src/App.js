@@ -42,14 +42,14 @@ const CATEGORIES = [
   { id:"other",     label:"其他",    emoji:"📌", color:"#94A3B8" },
 ];
 const PAYMENT_APPS = [
-  { id:"linepay", label:"LINE Pay", emoji:"💚", appScheme:"line://pay", iosStore:"https://apps.apple.com/tw/app/line/id443904275", androidStore:"https://play.google.com/store/apps/details?id=jp.naver.line.android" },
-  { id:"jkopay",  label:"街口支付", emoji:"🟠", appScheme:"jkopay://", iosStore:"https://apps.apple.com/tw/app/%E8%A1%97%E5%8F%A3%E6%94%AF%E4%BB%98/id1198002009", androidStore:"https://play.google.com/store/apps/details?id=com.jkopay.app" },
-  { id:"allpay",  label:"全支付",   emoji:"🔵", appScheme:"allpay://", iosStore:"https://apps.apple.com/tw/app/%E5%85%A8%E6%94%AF%E4%BB%98/id1609540474", androidStore:"https://play.google.com/store/apps/details?id=com.allpay.wallet" },
-  { id:"esun",    label:"玉山銀行", emoji:"🏔️", appScheme:"esunbank://", iosStore:"https://apps.apple.com/tw/app/%E7%8E%89%E5%B1%B1%E9%8A%80%E8%A1%8C/id382006912", androidStore:"https://play.google.com/store/apps/details?id=com.esunbank.mobile" },
-  { id:"ctbc",    label:"中國信託", emoji:"🏦", appScheme:"ctbcbank://", iosStore:"https://apps.apple.com/tw/app/%E4%B8%AD%E5%9C%8B%E4%BF%A1%E8%A8%97/id370486914", androidStore:"https://play.google.com/store/apps/details?id=com.chinatrust.mobilebank" },
-  { id:"taishin", label:"台新銀行", emoji:"🔴", appScheme:"taishinbank://", iosStore:"https://apps.apple.com/tw/app/%E5%8F%B0%E6%96%B0%E9%8A%80%E8%A1%8C/id476439722", androidStore:"https://play.google.com/store/apps/details?id=com.taishinbank.mobile" },
-  { id:"land",    label:"土地銀行", emoji:"🟢", appScheme:"landbank://", iosStore:"https://apps.apple.com/tw/app/%E5%9C%9F%E9%8A%80%E8%A1%8C/id1439401022", androidStore:"https://play.google.com/store/apps/details?id=com.landbank.mobile" },
-  { id:"sinopac", label:"永豐銀行", emoji:"🟡", appScheme:"sinopacbank://", iosStore:"https://apps.apple.com/tw/app/%E6%B0%B8%E8%B1%90%E9%8A%80%E8%A1%8C/id465573698", androidStore:"https://play.google.com/store/apps/details?id=com.banksinopac.mobilebank" },
+  { id:"linepay", label:"LINE Pay", emoji:"💚", appScheme:"line://", iosStore:"https://apps.apple.com/tw/app/id443904275", androidStore:"https://play.google.com/store/apps/details?id=jp.naver.line.android" },
+  { id:"jkopay",  label:"街口支付", emoji:"🟠", appScheme:"jkopay://", iosStore:"https://apps.apple.com/tw/app/id1198002009", androidStore:"https://play.google.com/store/apps/details?id=com.jkopay.app" },
+  { id:"allpay",  label:"全支付",   emoji:"🔵", appScheme:"allpay://", iosStore:"https://apps.apple.com/tw/app/id1609540474", androidStore:"https://play.google.com/store/apps/details?id=tw.com.allpay.allpayapp" },
+  { id:"esun",    label:"玉山銀行", emoji:"🏔️", appScheme:"esunbank://", iosStore:"https://apps.apple.com/tw/app/id382006912", androidStore:"https://play.google.com/store/apps/details?id=com.esunbank.esunonline" },
+  { id:"ctbc",    label:"中國信託", emoji:"🏦", appScheme:"ctbcbank://", iosStore:"https://apps.apple.com/tw/app/id370486914", androidStore:"https://play.google.com/store/apps/details?id=com.chinatrust.mobilebank" },
+  { id:"taishin", label:"台新銀行", emoji:"🔴", appScheme:"taishinbank://", iosStore:"https://apps.apple.com/tw/app/id476439722", androidStore:"https://play.google.com/store/apps/details?id=com.taishinbank.mobile" },
+  { id:"land",    label:"土地銀行", emoji:"🟢", appScheme:"landbank://", iosStore:"https://apps.apple.com/tw/app/id1439401022", androidStore:"https://play.google.com/store/apps/details?id=com.landbank.mobile" },
+  { id:"sinopac", label:"永豐銀行", emoji:"🟡", appScheme:"sinopacbank://", iosStore:"https://apps.apple.com/tw/app/id465573698", androidStore:"https://play.google.com/store/apps/details?id=com.banksinopac.mobilebank" },
   { id:"custom",  label:"自訂",     emoji:"✏️", appScheme:"", iosStore:"", androidStore:"" },
 ];
 const DAYS_ZH  = ["日","一","二","三","四","五","六"];
@@ -453,6 +453,68 @@ function SpinnerWheel({ names, onDone }) {
   );
 }
 
+
+// -- ChartCarousel --
+function ChartCarousel({ catTotals, memberTotals, totalTWD, members, bookColor }) {
+  const [idx, setIdx] = useState(0);
+  const touchX = useRef(null);
+  const charts = [
+    { key:"cat",  label:"消費總覽" },
+    { key:"member",label:"成員支出" },
+  ];
+
+  // Member chart data
+  const memberChartData = memberTotals.filter(m=>m.paid>0).map(m=>({
+    id:m.name, label:m.nickname||m.name, emoji:"", value:m.paid,
+    color:MEMBER_COLORS[members.findIndex(x=>x.name===m.name)%MEMBER_COLORS.length]
+  }));
+  const memberTotal = memberChartData.reduce((s,m)=>s+m.value,0);
+
+  const data  = idx===0 ? catTotals  : memberChartData;
+  const total = idx===0 ? totalTWD   : memberTotal;
+
+  return (
+    <div onTouchStart={e=>{touchX.current=e.touches[0].clientX;}}
+      onTouchEnd={e=>{ const dx=e.changedTouches[0].clientX-(touchX.current||0); if(Math.abs(dx)>40) setIdx(i=>(i+1)%2); touchX.current=null; }}
+      style={{ background:"#fff",borderRadius:18,padding:16,marginBottom:12,boxShadow:"0 2px 10px rgba(37,99,235,.07)",touchAction:"pan-y" }}>
+      {/* Tab switcher */}
+      <div style={{ display:"flex",gap:8,marginBottom:12 }}>
+        {charts.map((ch,i)=>(
+          <button key={ch.key} onClick={()=>setIdx(i)} style={{
+            flex:1,border:"none",borderRadius:10,padding:"6px 0",cursor:"pointer",fontFamily:"inherit",
+            background:idx===i?bookColor:"#EFF6FF",
+            color:idx===i?"#fff":bookColor,fontWeight:700,fontSize:12
+          }}>📊 {ch.label}</button>
+        ))}
+      </div>
+      {data.length===0
+        ? <div style={{ textAlign:"center",color:"#94A3B8",padding:16,fontSize:13 }}>暫無資料</div>
+        : <div style={{ display:"flex",alignItems:"center",gap:16 }}>
+            <DonutChart data={data} total={total}/>
+            <div style={{ flex:1,minWidth:0 }}>
+              {data.map(d=>(
+                <div key={d.id||d.label} style={{ display:"flex",alignItems:"center",gap:6,marginBottom:5 }}>
+                  <div style={{ width:8,height:8,borderRadius:"50%",background:d.color,flexShrink:0 }}/>
+                  <span style={{ fontSize:11,color:"#64748B",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                    {d.emoji} {d.label}
+                  </span>
+                  <span style={{ fontSize:11,fontWeight:700,color:"#1E3A5F",flexShrink:0 }}>
+                    NT${Math.round(d.value).toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+      }
+      <div style={{ display:"flex",justifyContent:"center",gap:5,marginTop:10 }}>
+        {charts.map((_,i)=>(
+          <div key={i} style={{ width:i===idx?16:6,height:6,borderRadius:3,background:i===idx?bookColor:"#E2E8F0",transition:"width .2s" }}/>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // -- BookApp --------------------------------------------------------------------
 function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
   const [book,     setBook]     = useState(null);
@@ -473,6 +535,8 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
   const [showMenu,    setShowMenu]    = useState(false);
   const [showInvite,  setShowInvite]  = useState(false);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
+  const [cleared, setCleared] = useState({});
+  const [confirmRemoveMember, setConfirmRemoveMember] = useState(null); // {from_to: amount}
   const swipeTouchX = useRef(null);
   const [spinnerData, setSpinnerData] = useState(null);
   const [flagging,    setFlagging]    = useState(null); // expense id being flagged
@@ -480,6 +544,22 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
   const PER_PAGE = 7;
 
   const showToast = msg => { setToast(msg); setTimeout(()=>setToast(null),2400); };
+
+  const clearSettlement = async (from, to, amount) => {
+    // Record a settlement payment as a new expense with category "cleared"
+    await addDoc(collection(db,"books",bookId,"expenses"),{
+      desc:`${from} 結清欠款`,
+      amount, currency:"TWD",
+      paidBy:from,
+      splitWith:[to],
+      plusOnes:{}, category:"cleared",
+      createdBy:from,
+      isSettlement:true,
+      date:todayStr(),
+      flags:{}, createdAt:serverTimestamp()
+    });
+    showToast("✅ 已結清！");
+  };
   useEffect(()=>{ setPage(1); },[selDate]);
 
   useEffect(()=>{
@@ -520,7 +600,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
     if(Math.abs(cArr[ci].val)<0.5) ci++;
   }
 
-  const dayExp   = expenses.filter(e=>e.date===selDate).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+  const dayExp   = expenses.filter(e=>e.date===selDate&&!e.isSettlement).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
   const totPages = Math.max(1,Math.ceil(dayExp.length/PER_PAGE));
   const pagedExp = dayExp.slice((page-1)*PER_PAGE,page*PER_PAGE);
   const datesWithData = [...new Set(expenses.map(e=>e.date))];
@@ -549,14 +629,19 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
     return acc;
   },{});
 
+  const nonSettleExp = expenses.filter(e=>!e.isSettlement);
   const memberTotals = members.map(m=>({
     name:m.name, emoji:m.emoji, nickname:m.nickname,
-    paid:expenses.filter(e=>e.paidBy===m.name).reduce((s,e)=>s+toTWD(e.amount,e.currency),0),
+    paid:nonSettleExp.filter(e=>e.paidBy===m.name).reduce((s,e)=>s+toTWD(e.amount,e.currency),0),
     share:expenses.reduce((s,e)=>{
       const sw=e.splitWith||[],po=e.plusOnes||{};
       const sc=sw.reduce((ss,n)=>ss+1+(po[n]?1:0),0);
       if(!sc||!sw.includes(m.name)) return s;
-      return s+toTWD(e.amount,e.currency)/sc*(1+(po[m.name]?1:0));
+      const twd=toTWD(e.amount,e.currency);
+      const base=Math.floor(twd/sc);
+      const extra=twd-base*sc;
+      const isExtra=e.extraPayer===m.name?extra:0;
+      return s+base*(1+(po[m.name]?1:0))+isExtra;
     },0)
   }));
 
@@ -779,7 +864,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
                         {exp.flagResolution==="updated"&&<span style={{ marginLeft:4,fontSize:10,background:"#DCFCE7",color:"#16A34A",borderRadius:5,padding:"1px 5px",fontWeight:700 }}>已更新</span>}
                         {exp.flagResolution==="rejected"&&<span style={{ marginLeft:4,fontSize:10,background:"#FEF2F2",color:"#EF4444",borderRadius:5,padding:"1px 5px",fontWeight:700 }}>不更新</span>}
                         {hasFlag&&<div style={{ fontSize:10,color:"#EF4444",marginTop:2 }}>{Object.entries(exp.flags||{}).map(([who,note])=>{ const m=members.find(x=>x.name===who); return m?`${m.nickname||m.name}: ${note}`:null; }).filter(Boolean).join(" · ")}</div>}
-                        {exp.extraPayer&&<span style={{ marginLeft:6,fontSize:10,color:"#94A3B8" }}>+1→{exp.extraPayer}</span>}
+                        {exp.extraPayer&&<span style={{ marginLeft:5,fontSize:12 }}>🐛{members.find(m=>m.name===exp.extraPayer)?.nickname||exp.extraPayer}</span>}
                       </div>
                       <div style={{ fontSize:11,color:"#94A3B8",marginTop:2 }}>{exp.paidBy} 付 · {sw.join("、")}</div>
                     </div>
@@ -830,22 +915,8 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
         {tab==="split"&&(
           <div>
             {/* Donut chart */}
-            {catTotals.length>0&&(
-              <div style={{ background:"#fff",borderRadius:18,padding:16,marginBottom:12,boxShadow:"0 2px 10px rgba(37,99,235,.07)" }}>
-                <div style={{ fontWeight:800,fontSize:14,color:"#1E3A5F",marginBottom:12 }}>📊 類別花費分布</div>
-                <div style={{ display:"flex",alignItems:"center",gap:16 }}>
-                  <DonutChart data={catTotals} total={totalTWD}/>
-                  <div style={{ flex:1,minWidth:0 }}>
-                    {catTotals.map(c=>(
-                      <div key={c.id} style={{ display:"flex",alignItems:"center",gap:6,marginBottom:5 }}>
-                        <div style={{ width:8,height:8,borderRadius:"50%",background:c.color,flexShrink:0 }}/>
-                        <span style={{ fontSize:11,color:"#64748B",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{c.emoji} {c.label}</span>
-                        <span style={{ fontSize:11,fontWeight:700,color:"#1E3A5F",flexShrink:0 }}>NT${Math.round(c.value).toLocaleString()}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+            {(catTotals.length>0||memberTotals.length>0)&&(
+              <ChartCarousel catTotals={catTotals} memberTotals={memberTotals} totalTWD={totalTWD} members={members} bookColor={bookColor}/>
             )}
 
             {/* Per-member spending */}
@@ -892,6 +963,15 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
                         </div>
                         <div style={{ fontWeight:800,color:"#EF4444",fontSize:15 }}>NT${s.amount}</div>
                       </div>
+                      {s.to===currentUser&&(
+                        <button onClick={()=>{
+                          if(window.confirm(`確認 ${s.from} 已付清 NT$${s.amount}？`)){
+                            clearSettlement(s.from, s.to, s.amount);
+                          }
+                        }} style={{ width:"100%",marginTop:8,display:"flex",alignItems:"center",justifyContent:"center",gap:7,background:"#16A34A",borderRadius:8,padding:"8px 12px",cursor:"pointer",border:"none",fontFamily:"inherit" }}>
+                          <span style={{ color:"#fff",fontWeight:700,fontSize:12 }}>✅ 確認收到 NT${s.amount}，結清</span>
+                        </button>
+                      )}
                       {isMe&&app?.appScheme&&(
                         <button onClick={()=>{
                           const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -956,7 +1036,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
                   </div>
                   {/* Owner can remove others (not self) */}
                   {isOwner&&m.name!==currentUser&&(
-                    <button onClick={async()=>{ await deleteDoc(doc(db,"books",bookId,"members",m.id)); showToast(`已移除 ${m.nickname||m.name}`); }}
+                    <button onClick={()=>setConfirmRemoveMember(m)}
                       style={{ background:"#FEF2F2",border:"none",borderRadius:8,padding:"5px 9px",cursor:"pointer",color:"#EF4444",fontSize:11,fontWeight:700,fontFamily:"inherit" }}>移除</button>
                   )}
                 </div>
@@ -1007,6 +1087,16 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
       )}
       {/* 小衰鬼 section - shown in split tab */}
 
+      {confirmRemoveMember&&(
+        <ConfirmDialog
+          msg={`移除「${confirmRemoveMember.nickname||confirmRemoveMember.name}」？`}
+          sub="移除後該成員將無法存取此記帳本"
+          confirmLabel="確認移除"
+          confirmColor="#EF4444"
+          onConfirm={async()=>{ await deleteDoc(doc(db,"books",bookId,"members",confirmRemoveMember.id)); showToast(`已移除 ${confirmRemoveMember.nickname||confirmRemoveMember.name}`); setConfirmRemoveMember(null); }}
+          onCancel={()=>setConfirmRemoveMember(null)}
+        />
+      )}
       {confirmDel&&<ConfirmDialog msg="確定刪除這筆支出？" sub="刪除後無法復原" onConfirm={()=>deleteExpense(confirmDel)} onCancel={()=>setConfirmDel(null)}/>}
       {archiveConf&&<ConfirmDialog msg={`封存「${book?.name}」？`} sub="封存後無法繼續新增支出" confirmLabel="確認封存" confirmColor="#D97706" onConfirm={async()=>{ await updateDoc(doc(db,"books",bookId),{archived:true}); setArchiveConf(false); showToast("📦 已封存"); }} onCancel={()=>setArchiveConf(false)}/>}
       {unarchiveConf&&<ConfirmDialog msg={`解除封存「${book?.name}」？`} confirmLabel="解除封存" confirmColor="#16A34A" onConfirm={async()=>{ await updateDoc(doc(db,"books",bookId),{archived:false}); setUnarchiveConf(false); showToast("🔓 已解除封存"); }} onCancel={()=>setUnarchiveConf(false)}/>}

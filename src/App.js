@@ -712,7 +712,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
     <div onTouchStart={e=>{ swipeTouchX.current=e.touches[0].clientX; }} onTouchEnd={e=>{ const dx=e.changedTouches[0].clientX-(swipeTouchX.current||0); if(dx>window.innerWidth*0.72){ onBack(); } swipeTouchX.current=null; }} style={{ fontFamily:"'Noto Sans TC','PingFang TC',sans-serif",background:"#F0F7FF",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",paddingBottom:"calc(80px + env(safe-area-inset-bottom, 0px))" }}>
 
       {/* Header */}
-      <div style={{ width:"100%",maxWidth:540,background:bookColor,padding:"calc(env(safe-area-inset-top, 0px) + 8px) 16px 10px",borderRadius:"0 0 16px 16px",boxShadow:`0 8px 28px ${bookColor}44` }}>
+      <div style={{ width:"100%",maxWidth:540,background:bookColor,padding:"calc(env(safe-area-inset-top, 0px) + 5px) 16px 10px",borderRadius:"0 0 16px 16px",boxShadow:`0 8px 28px ${bookColor}44` }}>
         <div style={{ display:"flex",alignItems:"center",gap:10 }}>
           <button onClick={onBack} style={{ background:"rgba(255,255,255,.2)",border:"none",borderRadius:10,padding:"6px 9px",cursor:"pointer",color:"#fff",fontSize:16,lineHeight:1 }}>‹</button>
           <div style={{ flex:1,minWidth:0 }}>
@@ -958,29 +958,40 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
                         <div style={{ flex:1 }}/>
                         <div style={{ fontWeight:800,color:"#EF4444",fontSize:15 }}>NT${s.amount}</div>
                       </div>
-                      {isMe&&(
-                        <button onClick={async()=>{
-                          await addDoc(collection(db,"books",bookId,"expenses"),{
-                            desc:`${members.find(m=>m.name===s.from)?.nickname||s.from} 已轉帳`,
-                            amount:s.amount, currency:"TWD", paidBy:s.from,
-                            splitWith:[s.to], plusOnes:{}, category:"cleared",
-                            createdBy:currentUser, isSettlement:true, pendingConfirm:true,
-                            date:todayStr(), flags:{}, createdAt:serverTimestamp()
-                          });
-                          showToast("✅ 已通知對方確認收款");
-                        }} style={{ width:"100%",marginTop:8,display:"flex",alignItems:"center",justifyContent:"center",gap:7,background:"#2563EB",borderRadius:8,padding:"9px 12px",cursor:"pointer",border:"none",fontFamily:"inherit" }}>
-                          <span style={{ color:"#fff",fontWeight:700,fontSize:12 }}>💸 我已轉帳，通知對方確認</span>
-                        </button>
-                      )}
-                      {s.to===currentUser&&expenses.some(e=>e.isSettlement&&e.pendingConfirm&&e.paidBy===s.from&&e.splitWith?.includes(s.to))&&(
-                        <button onClick={async()=>{
-                          const pending=expenses.find(e=>e.isSettlement&&e.pendingConfirm&&e.paidBy===s.from&&e.splitWith?.includes(s.to));
-                          if(pending) await updateDoc(doc(db,"books",bookId,"expenses",pending.id),{pendingConfirm:false});
-                          showToast("✅ 已確認收款，款項結清！");
-                        }} style={{ width:"100%",marginTop:8,display:"flex",alignItems:"center",justifyContent:"center",gap:7,background:"#16A34A",borderRadius:8,padding:"9px 12px",cursor:"pointer",border:"none",fontFamily:"inherit" }}>
-                          <span style={{ color:"#fff",fontWeight:700,fontSize:12 }}>✅ 確認收款，結清</span>
-                        </button>
-                      )}
+                      {(()=>{
+                        const pending = expenses.find(e=>e.isSettlement&&e.pendingConfirm&&e.paidBy===s.from&&e.splitWith?.includes(s.to));
+                        if(pending){
+                          // Payer sees "waiting", receiver sees "confirm"
+                          if(isMe) return (
+                            <div style={{ width:"100%",marginTop:8,background:"#F1F5F9",borderRadius:8,padding:"9px 12px",textAlign:"center" }}>
+                              <span style={{ color:"#64748B",fontWeight:700,fontSize:12 }}>⏳ 待對方確認收款</span>
+                            </div>
+                          );
+                          if(s.to===currentUser) return (
+                            <button onClick={async()=>{
+                              await updateDoc(doc(db,"books",bookId,"expenses",pending.id),{pendingConfirm:false});
+                              showToast("✅ 已確認收款，款項結清！");
+                            }} style={{ width:"100%",marginTop:8,display:"flex",alignItems:"center",justifyContent:"center",gap:7,background:"#16A34A",borderRadius:8,padding:"9px 12px",cursor:"pointer",border:"none",fontFamily:"inherit" }}>
+                              <span style={{ color:"#fff",fontWeight:700,fontSize:12 }}>✅ 確認收款，結清</span>
+                            </button>
+                          );
+                        }
+                        if(isMe) return (
+                          <button onClick={async()=>{
+                            await addDoc(collection(db,"books",bookId,"expenses"),{
+                              desc:`${members.find(m=>m.name===s.from)?.nickname||s.from} 已轉帳`,
+                              amount:s.amount, currency:"TWD", paidBy:s.from,
+                              splitWith:[s.to], plusOnes:{}, category:"cleared",
+                              createdBy:currentUser, isSettlement:true, pendingConfirm:true,
+                              date:todayStr(), flags:{}, createdAt:serverTimestamp()
+                            });
+                            showToast("✅ 已通知對方確認收款");
+                          }} style={{ width:"100%",marginTop:8,display:"flex",alignItems:"center",justifyContent:"center",gap:7,background:"#2563EB",borderRadius:8,padding:"9px 12px",cursor:"pointer",border:"none",fontFamily:"inherit" }}>
+                            <span style={{ color:"#fff",fontWeight:700,fontSize:12 }}>💸 我已轉帳，通知對方確認</span>
+                          </button>
+                        );
+                        return null;
+                      })()}
                     </div>
                   );
                 })
@@ -1436,15 +1447,15 @@ function HomeScreen({ currentUser, onEnterBook }) {
             <div style={{ color:"#CBD5E1",fontSize:18 }}>›</div>
           </button>
         ))}
+        <button onClick={()=>setShowInstallHome(true)} style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,width:"100%",border:"1.5px solid #BFDBFE",borderRadius:12,background:"#EFF6FF",padding:"10px 0",marginTop:8,cursor:"pointer",fontFamily:"inherit" }}>
+          <span style={{ fontSize:13,color:"#2563EB",fontWeight:700 }}>📲 建立捷徑教學</span>
+        </button>
         {archived.length>0&&(
-          <button onClick={()=>setShowArchived(true)} style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,width:"100%",border:"none",background:"transparent",padding:"10px 16px",marginTop:2,cursor:"pointer",fontFamily:"inherit" }}>
-            <span style={{ fontSize:12,color:"#94A3B8",fontWeight:600 }}>查看封存記帳本 ({archived.length})</span>
-            <span style={{ color:"#CBD5E1",fontSize:12 }}>›</span>
+          <button onClick={()=>setShowArchived(true)} style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:4,width:"100%",border:"none",background:"transparent",padding:"8px 0 4px",cursor:"pointer",fontFamily:"inherit" }}>
+            <span style={{ fontSize:11,color:"#94A3B8" }}>查看封存記帳本 ({archived.length})</span>
+            <span style={{ color:"#CBD5E1",fontSize:11 }}>›</span>
           </button>
         )}
-        <button onClick={()=>setShowInstallHome(true)} style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:4,width:"100%",border:"none",background:"transparent",padding:"6px 0 10px",cursor:"pointer",fontFamily:"inherit" }}>
-          <span style={{ fontSize:11,color:"#94A3B8" }}>📲 建立捷徑教學</span>
-        </button>
         {/* Spacer to push buttons to bottom */}
         <div style={{ flex:1 }}/>
 
@@ -1523,7 +1534,7 @@ function HomeScreen({ currentUser, onEnterBook }) {
             <div style={{ color:"#fff",fontWeight:800,fontSize:18 }}>📦 封存記帳本</div>
           </div>
         </div>
-        <div style={{ flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"24px 16px 80px" }}>
+        <div style={{ flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"40px 20px 80px" }}>
           {archived.length===0
             ? <div style={{ textAlign:"center",color:"#94A3B8",padding:40 }}>沒有封存的記帳本</div>
             : archived.map(b=>(

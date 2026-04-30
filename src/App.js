@@ -929,15 +929,10 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
                 <div key={m.name} style={{ display:"flex",alignItems:"center",gap:9,marginBottom:9 }}>
                   <Avatar name={m.name} emoji={m.emoji} members={members} size={32}/>
                   <div style={{ flex:1 }}>
-                    <div style={{ fontWeight:700,color:"#1E3A5F",fontSize:13 }}>{m.nickname||m.name}{m.name===currentUser&&<span style={{ fontSize:10,color:bookColor,marginLeft:5 }}>（我）</span>}</div>
-                    <div style={{ fontSize:10,color:"#94A3B8" }}>應付 NT${Math.round(m.share).toLocaleString()}</div>
+                    <div style={{ fontWeight:700,color:"#1E3A5F",fontSize:14 }}>{m.nickname||m.name}{m.name===currentUser&&<span style={{ fontSize:10,color:bookColor,marginLeft:5 }}>（我）</span>}</div>
+                    <div style={{ fontSize:11,color:"#94A3B8",marginTop:2 }}>應付 NT${Math.round(m.share).toLocaleString()}</div>
                   </div>
-                  <div style={{ textAlign:"right" }}>
-                    <div style={{ fontWeight:800,fontSize:13,color:bookColor }}>已付 NT${Math.round(m.paid).toLocaleString()}</div>
-                    <div style={{ fontSize:10,color:(balances[m.name]||0)>0?"#10B981":(balances[m.name]||0)<0?"#EF4444":"#94A3B8",fontWeight:700 }}>
-                      {Math.round(balances[m.name]||0)===0?"±0":`${(balances[m.name]||0)>0?"+":""}NT${Math.round(balances[m.name]||0)}`}
-                    </div>
-                  </div>
+                  <div style={{ fontWeight:800,fontSize:14,color:"#1E3A5F" }}>已付 NT${Math.round(m.paid).toLocaleString()}</div>
                 </div>
               ))}
             </div>
@@ -954,7 +949,7 @@ function BookApp({ bookId, currentUser, userProfile, onBack, onOpenSettings }) {
                       <div style={{ display:"flex",alignItems:"center",gap:6 }}>
                         <span style={{ fontWeight:800,color:"#1E3A5F",fontSize:14 }}>
                           {members.find(m=>m.name===s.from)?.nickname||s.from}
-                          {isMe&&<span style={{color:"#2563EB"}}> 👈</span>}
+                          
                         </span>
                         <span style={{ color:"#94A3B8",fontSize:13,margin:"0 4px" }}>付給</span>
                         <span style={{ fontWeight:800,color:"#1E3A5F",fontSize:14 }}>
